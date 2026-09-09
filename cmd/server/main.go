@@ -1,0 +1,78 @@
+package main
+
+import (
+	"context"
+	"errors"
+	"log/slog"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
+
+	"github.com/Abbas-Shahneh/taskManager/internal/config"
+	"github.com/Abbas-Shahneh/taskManager/internal/server"
+)
+
+func main() {
+	logger := slog.New(
+		slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+			Level: slog.LevelInfo,
+		}),
+	)
+
+	slog.SetDefault(logger)
+
+	cfg, err := config.Load()
+	if err != nil {
+		logger.Error("failed to load configuration", "error", err)
+		os.Exit(1)
+	}
+
+	httpServer := server.New(cfg)
+
+	serverErrors := make(chan error, 1)
+
+	go func() {
+		logger.Info(
+			"starting HTTP server",
+			"port", cfg.Port,
+			"environment", cfg.AppEnv,
+		)
+
+		if err := httpServer.ListenAndServe(); err != nil &&
+			!errors.Is(err, http.ErrServerClosed) {
+			serverErrors <- err
+		}
+	}()
+
+	shutdownSignals := make(chan os.Signal, 1)
+
+	signal.Notify(
+		shutdownSignals,
+		syscall.SIGINT,
+		syscall.SIGTERM,
+	)
+
+	select {
+	case err := <-serverErrors:
+		logger.Error("HTTP server failed", "error", err)
+		os.Exit(1)
+
+	case signal := <-shutdownSignals:
+		logger.Info("shutdown signal received", "signal", signal)
+	}
+
+	ctx, cancel := context.WithTimeout(
+		context.Background(),
+		10*time.Second,
+	)
+	defer cancel()
+
+	if err := httpServer.Shutdown(ctx); err != nil {
+		logger.Error("HTTP server shutdown failed", "error", err)
+		os.Exit(1)
+	}
+
+	logger.Info("HTTP server stopped")
+}
