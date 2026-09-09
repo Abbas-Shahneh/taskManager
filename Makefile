@@ -1,4 +1,6 @@
-.PHONY: run test coverage vet fmt tidy build
+.PHONY: run test coverage vet fmt tidy build \
+	docker-up docker-down \
+	migration-up migration-down migration-version
 
 run:
 	go run ./cmd/server
@@ -20,4 +22,28 @@ tidy:
 	go mod tidy
 
 build:
-	go build -o bin/manager-task ./cmd/server
+	go build -o bin/task-manager ./cmd/server
+
+docker-up:
+	docker compose up -d
+
+docker-down:
+	docker compose down
+
+migration-up:
+	migrate \
+		-path migrations \
+		-database "$$DATABASE_URL" \
+		up
+
+migration-down:
+	migrate \
+		-path migrations \
+		-database "$$DATABASE_URL" \
+		down 1
+
+migration-version:
+	migrate \
+		-path migrations \
+		-database "$$DATABASE_URL" \
+		version
