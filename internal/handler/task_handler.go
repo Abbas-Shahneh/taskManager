@@ -42,8 +42,8 @@ func (h *TaskHandler) Create(c *gin.Context) {
 		writeError(
 			c,
 			http.StatusBadRequest,
+			"INVALID_REQUEST",
 			"invalid request body",
-			err,
 		)
 		return
 	}
@@ -91,12 +91,7 @@ func (h *TaskHandler) GetByID(c *gin.Context) {
 func (h *TaskHandler) List(c *gin.Context) {
 	params, err := parseListTasksParams(c)
 	if err != nil {
-		writeError(
-			c,
-			http.StatusBadRequest,
-			"invalid query parameters",
-			err,
-		)
+		writeListParamsError(c, err)
 		return
 	}
 
@@ -131,8 +126,8 @@ func (h *TaskHandler) Update(c *gin.Context) {
 		writeError(
 			c,
 			http.StatusBadRequest,
+			"INVALID_REQUEST",
 			"invalid request body",
-			err,
 		)
 		return
 	}
@@ -203,6 +198,15 @@ type listTasksResponse struct {
 	TotalPages int           `json:"total_pages"`
 }
 
+type errorResponse struct {
+	Error errorBody `json:"error"`
+}
+
+type errorBody struct {
+	Code    string `json:"code"`
+	Message string `json:"message"`
+}
+
 func parseUUIDParam(
 	c *gin.Context,
 	name string,
@@ -214,8 +218,8 @@ func parseUUIDParam(
 		writeError(
 			c,
 			http.StatusBadRequest,
+			"INVALID_TASK_ID",
 			"invalid task id",
-			service.ErrInvalidTaskID,
 		)
 
 		return uuid.Nil, service.ErrInvalidTaskID
@@ -283,53 +287,107 @@ func parseListTasksParams(
 	return params, nil
 }
 
-func writeServiceError(
-	c *gin.Context,
-	err error,
-) {
+func writeListParamsError(c *gin.Context, err error) {
+	switch {
+	case errors.Is(err, domain.ErrInvalidTaskStatus):
+		writeError(
+			c,
+			http.StatusBadRequest,
+			"INVALID_TASK",
+			"invalid task status",
+		)
+
+	case errors.Is(err, service.ErrInvalidPage):
+		writeError(
+			c,
+			http.StatusBadRequest,
+			"INVALID_PAGE",
+			"invalid page",
+		)
+
+	case errors.Is(err, service.ErrInvalidPageSize):
+		writeError(
+			c,
+			http.StatusBadRequest,
+			"INVALID_PAGE_SIZE",
+			"invalid page size",
+		)
+
+	default:
+		writeError(
+			c,
+			http.StatusBadRequest,
+			"INVALID_REQUEST",
+			"invalid query parameters",
+		)
+	}
+}
+
+func writeServiceError(c *gin.Context, err error) {
 	switch {
 	case errors.Is(err, domain.ErrTaskNotFound):
 		writeError(
 			c,
 			http.StatusNotFound,
+			"TASK_NOT_FOUND",
 			"task not found",
-			err,
 		)
 
 	case errors.Is(err, domain.ErrInvalidTaskTitle),
 		errors.Is(err, domain.ErrInvalidDescription),
 		errors.Is(err, domain.ErrInvalidAssignee),
-		errors.Is(err, domain.ErrInvalidTaskStatus),
-		errors.Is(err, service.ErrInvalidPage),
-		errors.Is(err, service.ErrInvalidPageSize),
-		errors.Is(err, service.ErrInvalidTaskID):
+		errors.Is(err, domain.ErrInvalidTaskStatus):
 		writeError(
 			c,
 			http.StatusBadRequest,
-			"invalid request",
-			err,
+			"INVALID_TASK",
+			"invalid task",
+		)
+
+	case errors.Is(err, service.ErrInvalidTaskID):
+		writeError(
+			c,
+			http.StatusBadRequest,
+			"INVALID_TASK_ID",
+			"invalid task id",
+		)
+
+	case errors.Is(err, service.ErrInvalidPage):
+		writeError(
+			c,
+			http.StatusBadRequest,
+			"INVALID_PAGE",
+			"invalid page",
+		)
+
+	case errors.Is(err, service.ErrInvalidPageSize):
+		writeError(
+			c,
+			http.StatusBadRequest,
+			"INVALID_PAGE_SIZE",
+			"invalid page size",
 		)
 
 	default:
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "internal server error",
-		})
+		writeError(
+			c,
+			http.StatusInternalServerError,
+			"INTERNAL_SERVER_ERROR",
+			"internal server error",
+		)
 	}
 }
 
 func writeError(
 	c *gin.Context,
 	statusCode int,
+	code string,
 	message string,
-	err error,
 ) {
-	response := gin.H{
-		"error": message,
-	}
-
-	if err != nil {
-		response["details"] = err.Error()
-	}
-
-	c.JSON(statusCode, response)
+	c.JSON(statusCode, errorResponse{
+		Error: errorBody{
+			Code:    code,
+			Message: message,
+		},
+	})
 }

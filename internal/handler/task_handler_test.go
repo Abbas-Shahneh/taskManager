@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -366,4 +367,175 @@ func TestTaskHandler_Delete(t *testing.T) {
 	)
 
 	assert.True(t, deleted)
+}
+
+func TestTaskHandler_GetByID_InvalidUUID_ErrorContract(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	mockService := &mockTaskService{
+		GetByIDFunc: func(
+			context.Context,
+			uuid.UUID,
+		) (domain.Task, error) {
+			t.Fatal("service should not be called")
+			return domain.Task{}, nil
+		},
+	}
+
+	router := gin.New()
+	handler := NewTaskHandler(mockService)
+
+	router.GET("/tasks/:id", handler.GetByID)
+
+	request := httptest.NewRequest(
+		http.MethodGet,
+		"/tasks/not-a-uuid",
+		nil,
+	)
+
+	recorder := httptest.NewRecorder()
+
+	router.ServeHTTP(recorder, request)
+
+	require.Equal(t, http.StatusBadRequest, recorder.Code)
+
+	var response errorResponse
+
+	require.NoError(
+		t,
+		json.Unmarshal(
+			recorder.Body.Bytes(),
+			&response,
+		),
+	)
+
+	assert.Equal(
+		t,
+		"INVALID_TASK_ID",
+		response.Error.Code,
+	)
+
+	assert.Equal(
+		t,
+		"invalid task id",
+		response.Error.Message,
+	)
+}
+
+func TestTaskHandler_GetByID_NotFound_ErrorContract(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	taskID := uuid.New()
+
+	mockService := &mockTaskService{
+		GetByIDFunc: func(
+			context.Context,
+			uuid.UUID,
+		) (domain.Task, error) {
+			return domain.Task{}, domain.ErrTaskNotFound
+		},
+	}
+
+	router := gin.New()
+	handler := NewTaskHandler(mockService)
+
+	router.GET("/tasks/:id", handler.GetByID)
+
+	request := httptest.NewRequest(
+		http.MethodGet,
+		"/tasks/"+taskID.String(),
+		nil,
+	)
+
+	recorder := httptest.NewRecorder()
+
+	router.ServeHTTP(recorder, request)
+
+	require.Equal(t, http.StatusNotFound, recorder.Code)
+
+	var response errorResponse
+
+	require.NoError(
+		t,
+		json.Unmarshal(
+			recorder.Body.Bytes(),
+			&response,
+		),
+	)
+
+	assert.Equal(
+		t,
+		"TASK_NOT_FOUND",
+		response.Error.Code,
+	)
+
+	assert.Equal(
+		t,
+		"task not found",
+		response.Error.Message,
+	)
+}
+
+func TestTaskHandler_GetByID_InternalError(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	taskID := uuid.New()
+
+	mockService := &mockTaskService{
+		GetByIDFunc: func(
+			context.Context,
+			uuid.UUID,
+		) (domain.Task, error) {
+			return domain.Task{}, errors.New("database connection failed")
+		},
+	}
+
+	router := gin.New()
+	handler := NewTaskHandler(mockService)
+
+	router.GET("/tasks/:id", handler.GetByID)
+
+	request := httptest.NewRequest(
+		http.MethodGet,
+		"/tasks/"+taskID.String(),
+		nil,
+	)
+
+	recorder := httptest.NewRecorder()
+
+	router.ServeHTTP(recorder, request)
+
+	require.Equal(
+		t,
+		http.StatusInternalServerError,
+		recorder.Code,
+	)
+
+	var response errorResponse
+
+	require.NoError(
+		t,
+		json.Unmarshal(
+			recorder.Body.Bytes(),
+			&response,
+		),
+	)
+
+	assert.Equal(
+		t,
+		"INTERNAL_SERVER_ERROR",
+		response.Error.Code,
+	)
+
+	assert.Equal(
+		t,
+		"internal server error",
+		response.Error.Message,
+	)
+
+	assert.NotContains(
+		t,
+		recorder.Body.String(),
+		"database connection failed",
+	)
 }
