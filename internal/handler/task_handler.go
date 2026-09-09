@@ -1,0 +1,335 @@
+package handler
+
+import (
+	"errors"
+	"net/http"
+	"strconv"
+	"strings"
+
+	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
+
+	"github.com/Abbas-Shahneh/taskManager/internal/domain"
+	"github.com/Abbas-Shahneh/taskManager/internal/service"
+)
+
+type TaskHandler struct {
+	service service.TaskService
+}
+
+func NewTaskHandler(taskService service.TaskService) *TaskHandler {
+	return &TaskHandler{
+		service: taskService,
+	}
+}
+
+// RegisterRoutes registers all task-related routes.
+func (h *TaskHandler) RegisterRoutes(router *gin.RouterGroup) {
+	tasks := router.Group("/tasks")
+
+	tasks.POST("", h.Create)
+	tasks.GET("", h.List)
+	tasks.GET("/:id", h.GetByID)
+	tasks.PUT("/:id", h.Update)
+	tasks.DELETE("/:id", h.Delete)
+}
+
+// Create handles POST /tasks.
+func (h *TaskHandler) Create(c *gin.Context) {
+	var request createTaskRequest
+
+	if err := c.ShouldBindJSON(&request); err != nil {
+		writeError(
+			c,
+			http.StatusBadRequest,
+			"invalid request body",
+			err,
+		)
+		return
+	}
+
+	input := service.CreateTaskInput{
+		Title:       request.Title,
+		Description: request.Description,
+		Status:      request.Status,
+		Assignee:    request.Assignee,
+	}
+
+	task, err := h.service.Create(c.Request.Context(), input)
+	if err != nil {
+		writeServiceError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusCreated, taskResponse{
+		Task: task,
+	})
+}
+
+// GetByID handles GET /tasks/:id.
+func (h *TaskHandler) GetByID(c *gin.Context) {
+	id, err := parseUUIDParam(c, "id")
+	if err != nil {
+		return
+	}
+
+	task, err := h.service.GetByID(
+		c.Request.Context(),
+		id,
+	)
+	if err != nil {
+		writeServiceError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, taskResponse{
+		Task: task,
+	})
+}
+
+// List handles GET /tasks.
+func (h *TaskHandler) List(c *gin.Context) {
+	params, err := parseListTasksParams(c)
+	if err != nil {
+		writeError(
+			c,
+			http.StatusBadRequest,
+			"invalid query parameters",
+			err,
+		)
+		return
+	}
+
+	result, err := h.service.List(
+		c.Request.Context(),
+		params,
+	)
+	if err != nil {
+		writeServiceError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, listTasksResponse{
+		Tasks:      result.Tasks,
+		Total:      result.Total,
+		Page:       result.Page,
+		PageSize:   result.PageSize,
+		TotalPages: result.TotalPages,
+	})
+}
+
+// Update handles PUT /tasks/:id.
+func (h *TaskHandler) Update(c *gin.Context) {
+	id, err := parseUUIDParam(c, "id")
+	if err != nil {
+		return
+	}
+
+	var request updateTaskRequest
+
+	if err := c.ShouldBindJSON(&request); err != nil {
+		writeError(
+			c,
+			http.StatusBadRequest,
+			"invalid request body",
+			err,
+		)
+		return
+	}
+
+	input := service.UpdateTaskInput{
+		Title:       request.Title,
+		Description: request.Description,
+		Status:      request.Status,
+		Assignee:    request.Assignee,
+	}
+
+	task, err := h.service.Update(
+		c.Request.Context(),
+		id,
+		input,
+	)
+	if err != nil {
+		writeServiceError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, taskResponse{
+		Task: task,
+	})
+}
+
+// Delete handles DELETE /tasks/:id.
+func (h *TaskHandler) Delete(c *gin.Context) {
+	id, err := parseUUIDParam(c, "id")
+	if err != nil {
+		return
+	}
+
+	if err := h.service.Delete(
+		c.Request.Context(),
+		id,
+	); err != nil {
+		writeServiceError(c, err)
+		return
+	}
+
+	c.Status(http.StatusNoContent)
+}
+
+type createTaskRequest struct {
+	Title       string            `json:"title"`
+	Description *string           `json:"description"`
+	Status      domain.TaskStatus `json:"status"`
+	Assignee    *string           `json:"assignee"`
+}
+
+type updateTaskRequest struct {
+	Title       string            `json:"title"`
+	Description *string           `json:"description"`
+	Status      domain.TaskStatus `json:"status"`
+	Assignee    *string           `json:"assignee"`
+}
+
+type taskResponse struct {
+	Task domain.Task `json:"task"`
+}
+
+type listTasksResponse struct {
+	Tasks      []domain.Task `json:"tasks"`
+	Total      int           `json:"total"`
+	Page       int           `json:"page"`
+	PageSize   int           `json:"page_size"`
+	TotalPages int           `json:"total_pages"`
+}
+
+func parseUUIDParam(
+	c *gin.Context,
+	name string,
+) (uuid.UUID, error) {
+	value := strings.TrimSpace(c.Param(name))
+
+	id, err := uuid.Parse(value)
+	if err != nil {
+		writeError(
+			c,
+			http.StatusBadRequest,
+			"invalid task id",
+			service.ErrInvalidTaskID,
+		)
+
+		return uuid.Nil, service.ErrInvalidTaskID
+	}
+
+	return id, nil
+}
+
+func parseListTasksParams(
+	c *gin.Context,
+) (service.ListTasksParams, error) {
+	params := service.ListTasksParams{}
+
+	statusValue := strings.TrimSpace(
+		c.Query("status"),
+	)
+
+	if statusValue != "" {
+		status := domain.TaskStatus(statusValue)
+
+		if !domain.IsValidTaskStatus(status) {
+			return service.ListTasksParams{},
+				domain.ErrInvalidTaskStatus
+		}
+
+		params.Status = &status
+	}
+
+	assigneeValue := strings.TrimSpace(
+		c.Query("assignee"),
+	)
+
+	if assigneeValue != "" {
+		params.Assignee = &assigneeValue
+	}
+
+	pageValue := strings.TrimSpace(
+		c.Query("page"),
+	)
+
+	if pageValue != "" {
+		page, err := strconv.Atoi(pageValue)
+		if err != nil {
+			return service.ListTasksParams{},
+				service.ErrInvalidPage
+		}
+
+		params.Page = page
+	}
+
+	pageSizeValue := strings.TrimSpace(
+		c.Query("page_size"),
+	)
+
+	if pageSizeValue != "" {
+		pageSize, err := strconv.Atoi(pageSizeValue)
+		if err != nil {
+			return service.ListTasksParams{},
+				service.ErrInvalidPageSize
+		}
+
+		params.PageSize = pageSize
+	}
+
+	return params, nil
+}
+
+func writeServiceError(
+	c *gin.Context,
+	err error,
+) {
+	switch {
+	case errors.Is(err, domain.ErrTaskNotFound):
+		writeError(
+			c,
+			http.StatusNotFound,
+			"task not found",
+			err,
+		)
+
+	case errors.Is(err, domain.ErrInvalidTaskTitle),
+		errors.Is(err, domain.ErrInvalidDescription),
+		errors.Is(err, domain.ErrInvalidAssignee),
+		errors.Is(err, domain.ErrInvalidTaskStatus),
+		errors.Is(err, service.ErrInvalidPage),
+		errors.Is(err, service.ErrInvalidPageSize),
+		errors.Is(err, service.ErrInvalidTaskID):
+		writeError(
+			c,
+			http.StatusBadRequest,
+			"invalid request",
+			err,
+		)
+
+	default:
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "internal server error",
+		})
+	}
+}
+
+func writeError(
+	c *gin.Context,
+	statusCode int,
+	message string,
+	err error,
+) {
+	response := gin.H{
+		"error": message,
+	}
+
+	if err != nil {
+		response["details"] = err.Error()
+	}
+
+	c.JSON(statusCode, response)
+}

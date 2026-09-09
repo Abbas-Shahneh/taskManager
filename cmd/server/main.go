@@ -12,7 +12,9 @@ import (
 
 	"github.com/Abbas-Shahneh/taskManager/internal/config"
 	"github.com/Abbas-Shahneh/taskManager/internal/database"
+	"github.com/Abbas-Shahneh/taskManager/internal/repository"
 	"github.com/Abbas-Shahneh/taskManager/internal/server"
+	"github.com/Abbas-Shahneh/taskManager/internal/service"
 )
 
 func main() {
@@ -53,7 +55,16 @@ func main() {
 	}
 	defer db.Close()
 
-	httpServer := server.New(cfg)
+	taskRepository := repository.NewPostgresTaskRepository(db)
+
+	taskService := service.NewTaskService(
+		taskRepository,
+	)
+
+	httpServer := server.New(
+		cfg.Port,
+		taskService,
+	)
 
 	serverErrors := make(chan error, 1)
 

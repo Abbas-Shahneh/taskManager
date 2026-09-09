@@ -1,33 +1,41 @@
 package server
 
 import (
+	"fmt"
 	"net/http"
-	"strconv"
-	"time"
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/Abbas-Shahneh/taskManager/internal/config"
+	"github.com/Abbas-Shahneh/taskManager/internal/handler"
+	"github.com/Abbas-Shahneh/taskManager/internal/middleware"
+	"github.com/Abbas-Shahneh/taskManager/internal/service"
 )
 
-func New(cfg config.Config) *http.Server {
+func New(
+	port int,
+	taskService service.TaskService,
+) *http.Server {
 	router := gin.New()
 
 	router.Use(gin.Logger())
 	router.Use(gin.Recovery())
+	router.Use(middleware.RequestID())
 
-	router.GET("/health", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{
-			"status": "ok",
-		})
-	})
+	router.GET("/health", healthHandler)
+
+	api := router.Group("/api/v1")
+
+	taskHandler := handler.NewTaskHandler(taskService)
+	taskHandler.RegisterRoutes(api)
 
 	return &http.Server{
-		Addr:              ":" + strconv.Itoa(cfg.Port),
-		Handler:           router,
-		ReadHeaderTimeout: 5 * time.Second,
-		ReadTimeout:       10 * time.Second,
-		WriteTimeout:      10 * time.Second,
-		IdleTimeout:       60 * time.Second,
+		Addr:    fmt.Sprintf(":%d", port),
+		Handler: router,
 	}
+}
+
+func healthHandler(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{
+		"status": "ok",
+	})
 }
