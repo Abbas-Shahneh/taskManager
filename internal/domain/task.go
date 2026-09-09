@@ -35,24 +35,30 @@ type Task struct {
 }
 
 func (t Task) Validate() error {
-	title := strings.TrimSpace(t.Title)
+	t.Title = strings.TrimSpace(t.Title)
 
-	if title == "" || len(title) > 200 {
+	if t.Title == "" || len(t.Title) > 200 {
 		return ErrInvalidTaskTitle
 	}
 
-	if t.Description != nil &&
-		len(strings.TrimSpace(*t.Description)) > 5000 {
-		return ErrInvalidDescription
+	if t.Description != nil {
+		description := strings.TrimSpace(*t.Description)
+
+		if len(description) > 5000 {
+			return ErrInvalidDescription
+		}
 	}
 
 	if !IsValidTaskStatus(t.Status) {
 		return ErrInvalidTaskStatus
 	}
 
-	if t.Assignee != nil &&
-		len(strings.TrimSpace(*t.Assignee)) > 100 {
-		return ErrInvalidAssignee
+	if t.Assignee != nil {
+		assignee := strings.TrimSpace(*t.Assignee)
+
+		if len(assignee) > 100 {
+			return ErrInvalidAssignee
+		}
 	}
 
 	return nil
