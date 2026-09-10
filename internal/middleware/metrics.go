@@ -19,6 +19,10 @@ func Metrics(m *metrics.Metrics) gin.HandlerFunc {
 			route = "unknown"
 		}
 
+		if route == "/metrics" {
+			return
+		}
+
 		m.ObserveHTTPRequest(
 			c.Request.Method,
 			route,

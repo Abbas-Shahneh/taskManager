@@ -15,6 +15,7 @@ import (
 	"github.com/Abbas-Shahneh/taskManager/internal/repository"
 	"github.com/Abbas-Shahneh/taskManager/internal/server"
 	"github.com/Abbas-Shahneh/taskManager/internal/service"
+	"github.com/Abbas-Shahneh/taskManager/internal/tracing"
 )
 
 func main() {
@@ -38,6 +39,9 @@ func main() {
 		)
 		os.Exit(1)
 	}
+
+	shutdownTracing := tracing.Init()
+	defer shutdownTracing(context.Background())
 
 	ctx := context.Background()
 

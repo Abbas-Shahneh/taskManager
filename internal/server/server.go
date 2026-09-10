@@ -22,9 +22,9 @@ func New(
 ) *http.Server {
 	router := gin.New()
 
-	router.Use(gin.Logger())
 	router.Use(gin.Recovery())
 	router.Use(middleware.RequestID())
+	router.Use(middleware.Tracing())
 
 	appMetrics := metrics.New()
 
