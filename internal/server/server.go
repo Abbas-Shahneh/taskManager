@@ -5,23 +5,41 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"github.com/Abbas-Shahneh/taskManager/internal/handler"
+	"github.com/Abbas-Shahneh/taskManager/internal/metrics"
 	"github.com/Abbas-Shahneh/taskManager/internal/middleware"
 	"github.com/Abbas-Shahneh/taskManager/internal/service"
 )
 
-func New(
-	port int,
-	taskService service.TaskService,
-) *http.Server {
+func New(port int, taskService service.TaskService) *http.Server {
 	router := gin.New()
 
 	router.Use(gin.Logger())
 	router.Use(gin.Recovery())
 	router.Use(middleware.RequestID())
 
+	appMetrics := metrics.New()
+
+	registry := prometheus.NewRegistry()
+
+	if err := appMetrics.Register(registry); err != nil {
+		panic(fmt.Errorf("register metrics: %w", err))
+	}
+
+	router.Use(middleware.Metrics(appMetrics))
+
 	router.GET("/health", healthHandler)
+
+	router.GET(
+		"/metrics",
+		gin.WrapH(promhttp.HandlerFor(
+			registry,
+			promhttp.HandlerOpts{},
+		)),
+	)
 
 	api := router.Group("/api/v1")
 
