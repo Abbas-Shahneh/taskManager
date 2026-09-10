@@ -2,6 +2,7 @@ package server
 
 import (
 	"fmt"
+	"log/slog"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -14,7 +15,11 @@ import (
 	"github.com/Abbas-Shahneh/taskManager/internal/service"
 )
 
-func New(port int, taskService service.TaskService) *http.Server {
+func New(
+	port int,
+	taskService service.TaskService,
+	logger *slog.Logger,
+) *http.Server {
 	router := gin.New()
 
 	router.Use(gin.Logger())
@@ -29,6 +34,7 @@ func New(port int, taskService service.TaskService) *http.Server {
 		panic(fmt.Errorf("register metrics: %w", err))
 	}
 
+	router.Use(middleware.RequestLogger(logger))
 	router.Use(middleware.Metrics(appMetrics))
 
 	router.GET("/health", healthHandler)

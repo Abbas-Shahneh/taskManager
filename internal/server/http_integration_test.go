@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"io"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -44,7 +46,9 @@ func setupHTTPIntegrationTest(t *testing.T) (*httptest.Server, *pgxpool.Pool) {
 
 	gin.SetMode(gin.TestMode)
 
-	httpServer := New(8080, taskService)
+	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
+
+	httpServer := New(8080, taskService, logger)
 
 	testServer := httptest.NewServer(httpServer.Handler)
 

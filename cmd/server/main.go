@@ -64,6 +64,7 @@ func main() {
 	httpServer := server.New(
 		cfg.Port,
 		taskService,
+		logger,
 	)
 
 	serverErrors := make(chan error, 1)
