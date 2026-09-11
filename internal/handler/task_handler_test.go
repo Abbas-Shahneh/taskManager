@@ -14,6 +14,7 @@ import (
 	"github.com/Abbas-Shahneh/taskManager/internal/service"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	dto "github.com/prometheus/client_model/go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -589,4 +590,402 @@ func TestTaskHandler_GetByID_InternalError(t *testing.T) {
 		recorder.Body.String(),
 		"database connection failed",
 	)
+}
+
+func TestTaskHandler_Update(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	taskID := uuid.New()
+
+	description := "updated description"
+	assignee := "bob"
+
+	task := domain.Task{
+		ID:          taskID,
+		Title:       "Updated task",
+		Description: &description,
+		Status:      domain.TaskStatusInProgress,
+		Assignee:    &assignee,
+	}
+
+	mockService := &mockTaskService{
+		UpdateFunc: func(
+			_ context.Context,
+			id uuid.UUID,
+			input service.UpdateTaskInput,
+		) (domain.Task, error) {
+			assert.Equal(t, taskID, id)
+			assert.Equal(t, "Updated task", input.Title)
+			assert.Equal(
+				t,
+				domain.TaskStatusInProgress,
+				input.Status,
+			)
+
+			return task, nil
+		},
+	}
+
+	router := gin.New()
+	handler := NewTaskHandler(mockService, metrics.New())
+
+	router.PUT("/tasks/:id", handler.Update)
+
+	body := `{
+		"title": "Updated task",
+		"description": "updated description",
+		"status": "in_progress",
+		"assignee": "bob"
+	}`
+
+	request := httptest.NewRequest(
+		http.MethodPut,
+		"/tasks/"+taskID.String(),
+		bytes.NewBufferString(body),
+	)
+	request.Header.Set("Content-Type", "application/json")
+
+	recorder := httptest.NewRecorder()
+
+	router.ServeHTTP(recorder, request)
+
+	require.Equal(t, http.StatusOK, recorder.Code)
+
+	var response taskResponse
+	require.NoError(
+		t,
+		json.Unmarshal(recorder.Body.Bytes(), &response),
+	)
+
+	assert.Equal(t, taskID, response.Task.ID)
+	assert.Equal(t, "Updated task", response.Task.Title)
+	assert.Equal(
+		t,
+		domain.TaskStatusInProgress,
+		response.Task.Status,
+	)
+}
+
+func TestTaskHandler_Update_InvalidUUID(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	mockService := &mockTaskService{
+		UpdateFunc: func(
+			context.Context,
+			uuid.UUID,
+			service.UpdateTaskInput,
+		) (domain.Task, error) {
+			t.Fatal("service should not be called")
+			return domain.Task{}, nil
+		},
+	}
+
+	router := gin.New()
+	handler := NewTaskHandler(mockService, metrics.New())
+
+	router.PUT("/tasks/:id", handler.Update)
+
+	request := httptest.NewRequest(
+		http.MethodPut,
+		"/tasks/not-a-uuid",
+		bytes.NewBufferString(`{"title":"test"}`),
+	)
+	request.Header.Set("Content-Type", "application/json")
+
+	recorder := httptest.NewRecorder()
+
+	router.ServeHTTP(recorder, request)
+
+	require.Equal(t, http.StatusBadRequest, recorder.Code)
+
+	var response errorResponse
+	require.NoError(
+		t,
+		json.Unmarshal(recorder.Body.Bytes(), &response),
+	)
+
+	assert.Equal(t, "INVALID_TASK_ID", response.Error.Code)
+}
+
+func TestTaskHandler_Update_InvalidJSON(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	mockService := &mockTaskService{
+		UpdateFunc: func(
+			context.Context,
+			uuid.UUID,
+			service.UpdateTaskInput,
+		) (domain.Task, error) {
+			t.Fatal("service should not be called")
+			return domain.Task{}, nil
+		},
+	}
+
+	router := gin.New()
+	handler := NewTaskHandler(mockService, metrics.New())
+
+	router.PUT("/tasks/:id", handler.Update)
+
+	request := httptest.NewRequest(
+		http.MethodPut,
+		"/tasks/"+uuid.New().String(),
+		bytes.NewBufferString(`{"title":`),
+	)
+	request.Header.Set("Content-Type", "application/json")
+
+	recorder := httptest.NewRecorder()
+
+	router.ServeHTTP(recorder, request)
+
+	require.Equal(t, http.StatusBadRequest, recorder.Code)
+
+	var response errorResponse
+	require.NoError(
+		t,
+		json.Unmarshal(recorder.Body.Bytes(), &response),
+	)
+
+	assert.Equal(t, "INVALID_REQUEST", response.Error.Code)
+}
+
+func TestTaskHandler_Update_NotFound(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	taskID := uuid.New()
+
+	mockService := &mockTaskService{
+		UpdateFunc: func(
+			context.Context,
+			uuid.UUID,
+			service.UpdateTaskInput,
+		) (domain.Task, error) {
+			return domain.Task{}, domain.ErrTaskNotFound
+		},
+	}
+
+	router := gin.New()
+	handler := NewTaskHandler(mockService, metrics.New())
+
+	router.PUT("/tasks/:id", handler.Update)
+
+	request := httptest.NewRequest(
+		http.MethodPut,
+		"/tasks/"+taskID.String(),
+		bytes.NewBufferString(`{"title":"test","status":"pending"}`),
+	)
+	request.Header.Set("Content-Type", "application/json")
+
+	recorder := httptest.NewRecorder()
+
+	router.ServeHTTP(recorder, request)
+
+	require.Equal(t, http.StatusNotFound, recorder.Code)
+
+	var response errorResponse
+	require.NoError(
+		t,
+		json.Unmarshal(recorder.Body.Bytes(), &response),
+	)
+
+	assert.Equal(t, "TASK_NOT_FOUND", response.Error.Code)
+}
+
+func TestTaskHandler_List_InvalidQueryParameters(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	tests := []struct {
+		name     string
+		query    string
+		wantCode int
+		wantErr  string
+	}{
+		{
+			name:     "invalid status",
+			query:    "?status=invalid",
+			wantCode: http.StatusBadRequest,
+			wantErr:  "INVALID_TASK",
+		},
+		{
+			name:     "invalid page",
+			query:    "?page=abc",
+			wantCode: http.StatusBadRequest,
+			wantErr:  "INVALID_PAGE",
+		},
+		{
+			name:     "invalid page size",
+			query:    "?page_size=abc",
+			wantCode: http.StatusBadRequest,
+			wantErr:  "INVALID_PAGE_SIZE",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockService := &mockTaskService{
+				ListFunc: func(
+					context.Context,
+					service.ListTasksParams,
+				) (service.ListTasksResult, error) {
+					t.Fatal("service should not be called")
+					return service.ListTasksResult{}, nil
+				},
+			}
+
+			router := gin.New()
+			handler := NewTaskHandler(mockService, metrics.New())
+
+			router.GET("/tasks", handler.List)
+
+			request := httptest.NewRequest(
+				http.MethodGet,
+				"/tasks"+tt.query,
+				nil,
+			)
+
+			recorder := httptest.NewRecorder()
+
+			router.ServeHTTP(recorder, request)
+
+			require.Equal(t, tt.wantCode, recorder.Code)
+
+			var response errorResponse
+			require.NoError(
+				t,
+				json.Unmarshal(
+					recorder.Body.Bytes(),
+					&response,
+				),
+			)
+
+			assert.Equal(
+				t,
+				tt.wantErr,
+				response.Error.Code,
+			)
+		})
+	}
+}
+
+func TestTaskHandler_ServiceErrorMapping(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	tests := []struct {
+		name     string
+		err      error
+		wantCode int
+		wantErr  string
+	}{
+		{
+			name:     "task not found",
+			err:      domain.ErrTaskNotFound,
+			wantCode: http.StatusNotFound,
+			wantErr:  "TASK_NOT_FOUND",
+		},
+		{
+			name:     "invalid title",
+			err:      domain.ErrInvalidTaskTitle,
+			wantCode: http.StatusBadRequest,
+			wantErr:  "INVALID_TASK",
+		},
+		{
+			name:     "invalid description",
+			err:      domain.ErrInvalidDescription,
+			wantCode: http.StatusBadRequest,
+			wantErr:  "INVALID_TASK",
+		},
+		{
+			name:     "invalid assignee",
+			err:      domain.ErrInvalidAssignee,
+			wantCode: http.StatusBadRequest,
+			wantErr:  "INVALID_TASK",
+		},
+		{
+			name:     "invalid status",
+			err:      domain.ErrInvalidTaskStatus,
+			wantCode: http.StatusBadRequest,
+			wantErr:  "INVALID_TASK",
+		},
+		{
+			name:     "invalid task id",
+			err:      service.ErrInvalidTaskID,
+			wantCode: http.StatusBadRequest,
+			wantErr:  "INVALID_TASK_ID",
+		},
+		{
+			name:     "invalid page",
+			err:      service.ErrInvalidPage,
+			wantCode: http.StatusBadRequest,
+			wantErr:  "INVALID_PAGE",
+		},
+		{
+			name:     "invalid page size",
+			err:      service.ErrInvalidPageSize,
+			wantCode: http.StatusBadRequest,
+			wantErr:  "INVALID_PAGE_SIZE",
+		},
+		{
+			name:     "unknown error",
+			err:      errors.New("unexpected failure"),
+			wantCode: http.StatusInternalServerError,
+			wantErr:  "INTERNAL_SERVER_ERROR",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			recorder := httptest.NewRecorder()
+			c, _ := gin.CreateTestContext(recorder)
+
+			writeServiceError(c, tt.err)
+
+			require.Equal(t, tt.wantCode, recorder.Code)
+
+			var response errorResponse
+			require.NoError(
+				t,
+				json.Unmarshal(
+					recorder.Body.Bytes(),
+					&response,
+				),
+			)
+
+			assert.Equal(
+				t,
+				tt.wantErr,
+				response.Error.Code,
+			)
+		})
+	}
+}
+
+func TestTaskHandler_RefreshTaskCount(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	t.Run("updates metric", func(t *testing.T) {
+		serviceMock := &mockTaskService{
+			CountFunc: func(ctx context.Context) (int, error) {
+				return 42, nil
+			},
+		}
+
+		appMetrics := metrics.New()
+		h := NewTaskHandler(serviceMock, appMetrics)
+
+		router := gin.New()
+		router.GET("/test", func(c *gin.Context) {
+			h.refreshTaskCount(c)
+			c.Status(http.StatusNoContent)
+		})
+
+		req := httptest.NewRequest(http.MethodGet, "/test", nil)
+		rec := httptest.NewRecorder()
+
+		router.ServeHTTP(rec, req)
+
+		metric := &dto.Metric{}
+		err := appMetrics.TasksCount.Write(metric)
+		require.NoError(t, err)
+
+		assert.Equal(t, float64(42), metric.GetGauge().GetValue())
+	})
 }

@@ -80,5 +80,8 @@ func (m *mockTaskService) Delete(
 func (m *mockTaskService) Count(
 	ctx context.Context,
 ) (int, error) {
-	return 0, nil
+	if m.CountFunc == nil {
+		return 0, nil
+	}
+	return m.CountFunc(ctx)
 }

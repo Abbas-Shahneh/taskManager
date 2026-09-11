@@ -8,13 +8,33 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/Abbas-Shahneh/taskManager/internal/domain"
 )
 
+type postgresDB interface {
+	QueryRow(
+		context.Context,
+		string,
+		...any,
+	) pgx.Row
+
+	Query(
+		context.Context,
+		string,
+		...any,
+	) (pgx.Rows, error)
+
+	Exec(
+		context.Context,
+		string, ...any,
+	) (pgconn.CommandTag, error)
+}
+
 type PostgresTaskRepository struct {
-	db *pgxpool.Pool
+	db postgresDB
 }
 
 func NewPostgresTaskRepository(

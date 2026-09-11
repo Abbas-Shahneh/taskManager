@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
+	dto "github.com/prometheus/client_model/go"
 	"github.com/stretchr/testify/require"
 )
 
@@ -64,4 +65,20 @@ func TestMetrics_RegisterAndObserveHTTPRequest(t *testing.T) {
 
 	require.True(t, requestCounterFound)
 	require.True(t, durationHistogramFound)
+}
+
+func TestMetrics_SetTasksCount(t *testing.T) {
+	appMetrics := New()
+
+	appMetrics.SetTasksCount(42)
+
+	metric := &dto.Metric{}
+
+	require.NoError(
+		t,
+		appMetrics.TasksCount.Write(metric),
+	)
+
+	require.NotNil(t, metric.Gauge)
+	require.Equal(t, float64(42), metric.Gauge.GetValue())
 }
