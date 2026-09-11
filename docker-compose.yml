@@ -21,5 +21,67 @@ services:
       timeout: 5s
       retries: 10
 
+  migrate:
+    image: migrate/migrate:v4.19.1
+    container_name: task-manager-migrate
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./migrations:/migrations:ro
+    command:
+      [
+        "-path",
+        "/migrations",
+        "-database",
+        "postgres://task_manager:task_manager@postgres:5432/task_manager?sslmode=disable",
+        "up"
+      ]
+    restart: "no"
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: task-manager-app
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      APP_ENV: production
+      HTTP_PORT: 8080
+      LOG_LEVEL: info
+      GIN_MODE: release
+
+
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DATABASE_USER: task_manager
+      DATABASE_PASSWORD: task_manager
+      DATABASE_NAME: task_manager
+      DATABASE_SSLMODE: disable
+      DATABASE_MAX_CONNS: 10
+      DATABASE_MIN_CONNS: 2
+      DATABASE_MAX_CONN_LIFETIME_MINUTES: 30
+      DATABASE_MAX_CONN_IDLE_TIME_MINUTES: 5
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--spider",
+          "--quiet",
+          "http://127.0.0.1:8080/health"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
 volumes:
   postgres_data:
