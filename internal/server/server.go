@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -34,6 +35,15 @@ func New(
 		panic(fmt.Errorf("register metrics: %w", err))
 	}
 
+	if count, err := taskService.Count(context.Background()); err == nil {
+		appMetrics.SetTasksCount(count)
+	} else {
+		logger.Error(
+			"failed to initialize task count metric",
+			"error", err,
+		)
+	}
+
 	router.Use(middleware.RequestLogger(logger))
 	router.Use(middleware.Metrics(appMetrics))
 
@@ -49,7 +59,11 @@ func New(
 
 	api := router.Group("/api/v1")
 
-	taskHandler := handler.NewTaskHandler(taskService)
+	taskHandler := handler.NewTaskHandler(
+		taskService,
+		appMetrics,
+	)
+
 	taskHandler.RegisterRoutes(api)
 
 	return &http.Server{

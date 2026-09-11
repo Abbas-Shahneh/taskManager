@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/Abbas-Shahneh/taskManager/internal/domain"
+	"github.com/Abbas-Shahneh/taskManager/internal/metrics"
 	"github.com/Abbas-Shahneh/taskManager/internal/service"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -41,7 +42,12 @@ func TestTaskHandler_Create(t *testing.T) {
 
 	router := gin.New()
 
-	handler := NewTaskHandler(mockService)
+	appMetrics := metrics.New()
+
+	handler := NewTaskHandler(
+		mockService,
+		appMetrics,
+	)
 
 	router.POST("/tasks", handler.Create)
 
@@ -103,7 +109,12 @@ func TestTaskHandler_Create_InvalidJSON(t *testing.T) {
 
 	router := gin.New()
 
-	handler := NewTaskHandler(mockService)
+	appMetrics := metrics.New()
+
+	handler := NewTaskHandler(
+		mockService,
+		appMetrics,
+	)
 
 	router.POST("/tasks", handler.Create)
 
@@ -153,7 +164,12 @@ func TestTaskHandler_GetByID(t *testing.T) {
 
 	router := gin.New()
 
-	handler := NewTaskHandler(mockService)
+	appMetrics := metrics.New()
+
+	handler := NewTaskHandler(
+		mockService,
+		appMetrics,
+	)
 
 	router.GET("/tasks/:id", handler.GetByID)
 
@@ -201,7 +217,12 @@ func TestTaskHandler_GetByID_InvalidUUID(t *testing.T) {
 
 	router := gin.New()
 
-	handler := NewTaskHandler(mockService)
+	appMetrics := metrics.New()
+
+	handler := NewTaskHandler(
+		mockService,
+		appMetrics,
+	)
 
 	router.GET("/tasks/:id", handler.GetByID)
 
@@ -238,7 +259,12 @@ func TestTaskHandler_GetByID_NotFound(t *testing.T) {
 
 	router := gin.New()
 
-	handler := NewTaskHandler(mockService)
+	appMetrics := metrics.New()
+
+	handler := NewTaskHandler(
+		mockService,
+		appMetrics,
+	)
 
 	router.GET("/tasks/:id", handler.GetByID)
 
@@ -288,7 +314,12 @@ func TestTaskHandler_List(t *testing.T) {
 
 	router := gin.New()
 
-	handler := NewTaskHandler(mockService)
+	appMetrics := metrics.New()
+
+	handler := NewTaskHandler(
+		mockService,
+		appMetrics,
+	)
 
 	router.GET("/tasks", handler.List)
 
@@ -346,7 +377,12 @@ func TestTaskHandler_Delete(t *testing.T) {
 
 	router := gin.New()
 
-	handler := NewTaskHandler(mockService)
+	appMetrics := metrics.New()
+
+	handler := NewTaskHandler(
+		mockService,
+		appMetrics,
+	)
 
 	router.DELETE("/tasks/:id", handler.Delete)
 
@@ -383,7 +419,12 @@ func TestTaskHandler_GetByID_InvalidUUID_ErrorContract(t *testing.T) {
 	}
 
 	router := gin.New()
-	handler := NewTaskHandler(mockService)
+	appMetrics := metrics.New()
+
+	handler := NewTaskHandler(
+		mockService,
+		appMetrics,
+	)
 
 	router.GET("/tasks/:id", handler.GetByID)
 
@@ -437,7 +478,12 @@ func TestTaskHandler_GetByID_NotFound_ErrorContract(t *testing.T) {
 	}
 
 	router := gin.New()
-	handler := NewTaskHandler(mockService)
+	appMetrics := metrics.New()
+
+	handler := NewTaskHandler(
+		mockService,
+		appMetrics,
+	)
 
 	router.GET("/tasks/:id", handler.GetByID)
 
@@ -491,7 +537,12 @@ func TestTaskHandler_GetByID_InternalError(t *testing.T) {
 	}
 
 	router := gin.New()
-	handler := NewTaskHandler(mockService)
+	appMetrics := metrics.New()
+
+	handler := NewTaskHandler(
+		mockService,
+		appMetrics,
+	)
 
 	router.GET("/tasks/:id", handler.GetByID)
 

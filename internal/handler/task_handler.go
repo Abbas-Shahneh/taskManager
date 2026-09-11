@@ -10,16 +10,22 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/Abbas-Shahneh/taskManager/internal/domain"
+	"github.com/Abbas-Shahneh/taskManager/internal/metrics"
 	"github.com/Abbas-Shahneh/taskManager/internal/service"
 )
 
 type TaskHandler struct {
 	service service.TaskService
+	metrics *metrics.Metrics
 }
 
-func NewTaskHandler(taskService service.TaskService) *TaskHandler {
+func NewTaskHandler(
+	taskService service.TaskService,
+	appMetrics *metrics.Metrics,
+) *TaskHandler {
 	return &TaskHandler{
 		service: taskService,
+		metrics: appMetrics,
 	}
 }
 
@@ -60,6 +66,8 @@ func (h *TaskHandler) Create(c *gin.Context) {
 		writeServiceError(c, err)
 		return
 	}
+
+	h.refreshTaskCount(c)
 
 	c.JSON(http.StatusCreated, taskResponse{
 		Task: task,
@@ -168,6 +176,8 @@ func (h *TaskHandler) Delete(c *gin.Context) {
 		writeServiceError(c, err)
 		return
 	}
+
+	h.refreshTaskCount(c)
 
 	c.Status(http.StatusNoContent)
 }
@@ -390,4 +400,13 @@ func writeError(
 			Message: message,
 		},
 	})
+}
+
+func (h *TaskHandler) refreshTaskCount(c *gin.Context) {
+	count, err := h.service.Count(c.Request.Context())
+	if err != nil {
+		return
+	}
+
+	h.metrics.SetTasksCount(count)
 }
