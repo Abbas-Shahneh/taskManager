@@ -52,5 +52,5 @@ func TestMetrics_RecordsRequest(t *testing.T) {
 
 	require.NoError(t, err)
 
-	require.Len(t, families, 2)
+	require.Len(t, families, 3)
 }

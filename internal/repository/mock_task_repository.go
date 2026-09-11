@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"errors"
 
 	"github.com/google/uuid"
 
@@ -14,6 +15,7 @@ type MockTaskRepository struct {
 	ListFunc    func(context.Context, TaskListParams) ([]domain.Task, int, error)
 	UpdateFunc  func(context.Context, domain.Task) (domain.Task, error)
 	DeleteFunc  func(context.Context, uuid.UUID) error
+	CountFunc   func(context.Context) (int, error)
 }
 
 func (m *MockTaskRepository) Create(
@@ -49,4 +51,14 @@ func (m *MockTaskRepository) Delete(
 	id uuid.UUID,
 ) error {
 	return m.DeleteFunc(ctx, id)
+}
+
+func (m *MockTaskRepository) Count(
+	ctx context.Context,
+) (int, error) {
+	if m.CountFunc == nil {
+		return 0, errors.New("mock CountFunc is not configured")
+	}
+
+	return m.CountFunc(ctx)
 }

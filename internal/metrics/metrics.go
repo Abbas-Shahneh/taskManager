@@ -10,6 +10,7 @@ import (
 type Metrics struct {
 	HTTPRequestsTotal   *prometheus.CounterVec
 	HTTPRequestDuration *prometheus.HistogramVec
+	TasksCount          prometheus.Gauge
 }
 
 func New() *Metrics {
@@ -35,6 +36,12 @@ func New() *Metrics {
 				"route",
 			},
 		),
+		TasksCount: prometheus.NewGauge(
+			prometheus.GaugeOpts{
+				Name: "task_manager_tasks_count",
+				Help: "Current total number of tasks.",
+			},
+		),
 	}
 }
 
@@ -44,6 +51,10 @@ func (m *Metrics) Register(registry prometheus.Registerer) error {
 	}
 
 	if err := registry.Register(m.HTTPRequestDuration); err != nil {
+		return err
+	}
+
+	if err := registry.Register(m.TasksCount); err != nil {
 		return err
 	}
 
@@ -66,4 +77,8 @@ func (m *Metrics) ObserveHTTPRequest(
 		method,
 		route,
 	).Observe(duration.Seconds())
+}
+
+func (m *Metrics) SetTasksCount(count int) {
+	m.TasksCount.Set(float64(count))
 }

@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/google/uuid"
 
@@ -35,6 +36,10 @@ type TaskService interface {
 		ctx context.Context,
 		id uuid.UUID,
 	) error
+
+	Count(
+		context.Context,
+	) (int, error)
 }
 
 type CreateTaskInput struct {
@@ -77,4 +82,13 @@ func NewTaskService(
 	return &taskService{
 		repository: repository,
 	}
+}
+
+func (s *taskService) Count(ctx context.Context) (int, error) {
+	count, err := s.repository.Count(ctx)
+	if err != nil {
+		return 0, fmt.Errorf("count tasks: %w", err)
+	}
+
+	return count, nil
 }

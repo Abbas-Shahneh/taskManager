@@ -29,7 +29,7 @@ func TestMetrics_RegisterAndObserveHTTPRequest(t *testing.T) {
 
 	require.NoError(t, err)
 
-	require.Len(t, families, 2)
+	require.Len(t, families, 3)
 
 	var requestCounterFound bool
 	var durationHistogramFound bool

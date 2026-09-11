@@ -241,6 +241,23 @@ func (r *PostgresTaskRepository) List(
 	return tasks, total, nil
 }
 
+func (r *PostgresTaskRepository) Count(
+	ctx context.Context,
+) (int, error) {
+	const query = `
+		SELECT COUNT(*)
+		FROM tasks
+	`
+
+	var count int
+
+	if err := r.db.QueryRow(ctx, query).Scan(&count); err != nil {
+		return 0, fmt.Errorf("count tasks: %w", err)
+	}
+
+	return count, nil
+}
+
 func (r *PostgresTaskRepository) Update(
 	ctx context.Context,
 	task domain.Task,

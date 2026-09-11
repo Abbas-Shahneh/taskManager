@@ -41,4 +41,8 @@ type TaskRepository interface {
 		ctx context.Context,
 		id uuid.UUID,
 	) error
+
+	Count(
+		context.Context,
+	) (int, error)
 }

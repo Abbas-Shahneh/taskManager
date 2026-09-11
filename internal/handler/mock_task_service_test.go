@@ -35,6 +35,10 @@ type mockTaskService struct {
 		context.Context,
 		uuid.UUID,
 	) error
+
+	CountFunc func(
+		ctx context.Context,
+	) (int, error)
 }
 
 func (m *mockTaskService) Create(
@@ -71,4 +75,10 @@ func (m *mockTaskService) Delete(
 	id uuid.UUID,
 ) error {
 	return m.DeleteFunc(ctx, id)
+}
+
+func (m *mockTaskService) Count(
+	ctx context.Context,
+) (int, error) {
+	return 0, nil
 }
