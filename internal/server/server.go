@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"net/http/pprof"
 
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus"
@@ -55,6 +56,38 @@ func New(
 			registry,
 			promhttp.HandlerOpts{},
 		)),
+	)
+
+	router.GET("/debug/pprof/", gin.WrapF(pprof.Index))
+	router.GET("/debug/pprof/cmdline", gin.WrapF(pprof.Cmdline))
+	router.GET("/debug/pprof/profile", gin.WrapF(pprof.Profile))
+	router.POST("/debug/pprof/symbol", gin.WrapF(pprof.Symbol))
+	router.GET("/debug/pprof/symbol", gin.WrapF(pprof.Symbol))
+	router.GET("/debug/pprof/trace", gin.WrapF(pprof.Trace))
+
+	router.GET(
+		"/debug/pprof/goroutine",
+		gin.WrapH(pprof.Handler("goroutine")),
+	)
+	router.GET(
+		"/debug/pprof/heap",
+		gin.WrapH(pprof.Handler("heap")),
+	)
+	router.GET(
+		"/debug/pprof/threadcreate",
+		gin.WrapH(pprof.Handler("threadcreate")),
+	)
+	router.GET(
+		"/debug/pprof/block",
+		gin.WrapH(pprof.Handler("block")),
+	)
+	router.GET(
+		"/debug/pprof/mutex",
+		gin.WrapH(pprof.Handler("mutex")),
+	)
+	router.GET(
+		"/debug/pprof/allocs",
+		gin.WrapH(pprof.Handler("allocs")),
 	)
 
 	api := router.Group("/api/v1")
