@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
@@ -10,12 +11,14 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/Abbas-Shahneh/taskManager/internal/cache"
 	"github.com/Abbas-Shahneh/taskManager/internal/config"
 	"github.com/Abbas-Shahneh/taskManager/internal/database"
 	"github.com/Abbas-Shahneh/taskManager/internal/repository"
 	"github.com/Abbas-Shahneh/taskManager/internal/server"
 	"github.com/Abbas-Shahneh/taskManager/internal/service"
 	"github.com/Abbas-Shahneh/taskManager/internal/tracing"
+	"github.com/redis/go-redis/v9"
 )
 
 func main() {
@@ -40,6 +43,33 @@ func main() {
 		os.Exit(1)
 	}
 
+	var redisClient *redis.Client
+
+	if cfg.Redis.Enabled {
+		redisClient = redis.NewClient(&redis.Options{
+			Addr: fmt.Sprintf(
+				"%s:%d",
+				cfg.Redis.Host,
+				cfg.Redis.Port,
+			),
+		})
+
+		if err := redisClient.Ping(context.Background()).Err(); err != nil {
+			logger.Error(
+				"redis unavailable, continuing without cache",
+				"error",
+				err,
+			)
+
+			_ = redisClient.Close()
+			redisClient = nil
+		}
+	}
+
+	if redisClient != nil {
+		defer redisClient.Close()
+	}
+
 	shutdownTracing := tracing.Init()
 	defer shutdownTracing(context.Background())
 
@@ -61,9 +91,19 @@ func main() {
 
 	taskRepository := repository.NewPostgresTaskRepository(db)
 
-	taskService := service.NewTaskService(
-		taskRepository,
-	)
+	var taskService service.TaskService
+
+	if redisClient != nil {
+		taskCache := cache.NewRedisTaskListCache(redisClient)
+
+		taskService = service.NewTaskServiceWithCache(
+			taskRepository,
+			taskCache,
+			time.Duration(cfg.Redis.CacheTTL)*time.Second,
+		)
+	} else {
+		taskService = service.NewTaskService(taskRepository)
+	}
 
 	httpServer := server.New(
 		cfg.Port,

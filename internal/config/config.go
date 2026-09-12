@@ -12,6 +12,7 @@ type Config struct {
 	LogLevel string
 
 	Database DatabaseConfig
+	Redis    RedisConfig
 }
 
 type DatabaseConfig struct {
@@ -25,6 +26,13 @@ type DatabaseConfig struct {
 	MinConns        int32
 	MaxConnLifetime int
 	MaxConnIdleTime int
+}
+
+type RedisConfig struct {
+	Enabled  bool
+	Host     string
+	Port     int
+	CacheTTL int
 }
 
 func Load() (Config, error) {
@@ -94,6 +102,37 @@ func Load() (Config, error) {
 		)
 	}
 
+	redisPort, err := getIntEnv("REDIS_PORT", 6379)
+	if err != nil {
+		return Config{}, fmt.Errorf(
+			"load REDIS_PORT: %w",
+			err,
+		)
+	}
+
+	redisCacheTTL, err := getIntEnv(
+		"REDIS_CACHE_TTL_SECONDS",
+		60,
+	)
+	if err != nil {
+		return Config{}, fmt.Errorf(
+			"load REDIS_CACHE_TTL_SECONDS: %w",
+			err,
+		)
+	}
+
+	if redisPort < 1 || redisPort > 65535 {
+		return Config{}, fmt.Errorf(
+			"REDIS_PORT must be between 1 and 65535",
+		)
+	}
+
+	if redisCacheTTL < 1 {
+		return Config{}, fmt.Errorf(
+			"REDIS_CACHE_TTL_SECONDS must be greater than 0",
+		)
+	}
+
 	return Config{
 		AppEnv:   getEnv("APP_ENV", "development"),
 		Port:     httpPort,
@@ -110,6 +149,13 @@ func Load() (Config, error) {
 			MinConns:        int32(minConns),
 			MaxConnLifetime: maxConnLifetime,
 			MaxConnIdleTime: maxConnIdleTime,
+		},
+
+		Redis: RedisConfig{
+			Enabled:  getBoolEnv("REDIS_ENABLED", true),
+			Host:     getEnv("REDIS_HOST", "localhost"),
+			Port:     redisPort,
+			CacheTTL: redisCacheTTL,
 		},
 	}, nil
 }
@@ -132,4 +178,19 @@ func getIntEnv(key string, fallback int) (int, error) {
 	}
 
 	return strconv.Atoi(value)
+}
+
+func getBoolEnv(key string, fallback bool) bool {
+	value := os.Getenv(key)
+
+	if value == "" {
+		return fallback
+	}
+
+	parsed, err := strconv.ParseBool(value)
+	if err != nil {
+		return fallback
+	}
+
+	return parsed
 }

@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"math"
 	"strings"
@@ -57,7 +58,19 @@ func (s *taskService) Create(
 		)
 	}
 
+	s.invalidateTaskListCache(ctx)
+
 	return createdTask, nil
+}
+
+func (s *taskService) invalidateTaskListCache(
+	ctx context.Context,
+) {
+	if s.cache == nil {
+		return
+	}
+
+	_ = s.cache.InvalidateTaskLists(ctx)
 }
 
 func (s *taskService) GetByID(
@@ -84,11 +97,13 @@ func (s *taskService) List(
 	params ListTasksParams,
 ) (ListTasksResult, error) {
 	page := params.Page
+
 	if page == 0 {
 		page = DefaultPage
 	}
 
 	pageSize := params.PageSize
+
 	if pageSize == 0 {
 		pageSize = DefaultPageSize
 	}
@@ -105,6 +120,15 @@ func (s *taskService) List(
 
 	if offset > MaxOffset {
 		return ListTasksResult{}, ErrInvalidPage
+	}
+
+	params.Page = page
+	params.PageSize = pageSize
+
+	if s.cache != nil {
+		if result, ok := s.getCachedTaskList(ctx, params); ok {
+			return result, nil
+		}
 	}
 
 	repositoryParams := repository.TaskListParams{
@@ -133,13 +157,19 @@ func (s *taskService) List(
 		)
 	}
 
-	return ListTasksResult{
+	result := ListTasksResult{
 		Tasks:      tasks,
 		Total:      total,
 		Page:       page,
 		PageSize:   pageSize,
 		TotalPages: totalPages,
-	}, nil
+	}
+
+	if s.cache != nil {
+		s.setCachedTaskList(ctx, params, result)
+	}
+
+	return result, nil
 }
 
 func (s *taskService) Update(
@@ -178,6 +208,8 @@ func (s *taskService) Update(
 		)
 	}
 
+	s.invalidateTaskListCache(ctx)
+
 	return updatedTask, nil
 }
 
@@ -196,6 +228,8 @@ func (s *taskService) Delete(
 		)
 	}
 
+	s.invalidateTaskListCache(ctx)
+
 	return nil
 }
 
@@ -211,4 +245,44 @@ func normalizeOptionalString(value *string) *string {
 	}
 
 	return &normalized
+}
+
+func (s *taskService) getCachedTaskList(
+	ctx context.Context,
+	params ListTasksParams,
+) (ListTasksResult, bool) {
+	key := taskListCacheKey(params)
+
+	value, err := s.cache.Get(ctx, key)
+	if err != nil {
+		// Cache failure or miss must never break the request.
+		return ListTasksResult{}, false
+	}
+
+	var result ListTasksResult
+
+	if err := json.Unmarshal(value, &result); err != nil {
+		// Corrupt cache data is treated as a cache miss.
+		return ListTasksResult{}, false
+	}
+
+	return result, true
+}
+
+func (s *taskService) setCachedTaskList(
+	ctx context.Context,
+	params ListTasksParams,
+	result ListTasksResult,
+) {
+	value, err := json.Marshal(result)
+	if err != nil {
+		return
+	}
+
+	_ = s.cache.Set(
+		ctx,
+		taskListCacheKey(params),
+		value,
+		s.cacheTTL,
+	)
 }

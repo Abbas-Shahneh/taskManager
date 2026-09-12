@@ -3,9 +3,11 @@ package service
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/google/uuid"
 
+	"github.com/Abbas-Shahneh/taskManager/internal/cache"
 	"github.com/Abbas-Shahneh/taskManager/internal/domain"
 	"github.com/Abbas-Shahneh/taskManager/internal/repository"
 )
@@ -74,6 +76,8 @@ type ListTasksResult struct {
 
 type taskService struct {
 	repository repository.TaskRepository
+	cache      cache.TaskListCache
+	cacheTTL   time.Duration
 }
 
 func NewTaskService(
@@ -81,6 +85,18 @@ func NewTaskService(
 ) TaskService {
 	return &taskService{
 		repository: repository,
+	}
+}
+
+func NewTaskServiceWithCache(
+	repository repository.TaskRepository,
+	taskCache cache.TaskListCache,
+	cacheTTL time.Duration,
+) TaskService {
+	return &taskService{
+		repository: repository,
+		cache:      taskCache,
+		cacheTTL:   cacheTTL,
 	}
 }
 
