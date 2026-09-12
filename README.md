@@ -1,18 +1,18 @@
-**# Task Manager**
+# Task Manager
 
 A small task-management backend microservice built with Go, Gin, and PostgreSQL.
 
 The service provides a RESTful API for creating, reading, updating, deleting, filtering, and paginating tasks.
 
-**---**
+---
 
-**## Architecture**
+## Architecture
 
-The project is designed as an independently deployable **\*\*Task Manager microservice\*\***.
+The project is designed as an independently deployable **Task Manager microservice**.
 
 It follows a clean architecture that separates HTTP handling, business logic, persistence, and infrastructure concerns.
 
-\`\`\`text
+```text
 
                          ┌─────────────────────┐
 
@@ -80,13 +80,13 @@ It follows a clean architecture that separates HTTP handling, business logic, pe
 
                     └──────────────────────────────┘
 
-\`\`\`
+```
 
-**### Request flow**
+### Request flow
 
 A typical request follows this flow:
 
-\`\`\`text
+```text
 
 HTTP Request
 
@@ -138,105 +138,105 @@ PostgreSQL
 
 HTTP Response
 
-\`\`\`
+```
 
-**### Architectural responsibilities**
+### Architectural responsibilities
 
-**#### HTTP Handler**
-
-Responsible for:
-
-\* Parsing HTTP requests
-
-\* Validating request parameters
-
-\* Converting HTTP input into service inputs
-
-\* Calling the service layer
-
-\* Mapping domain/service errors to HTTP responses
-
-\* Returning consistent JSON responses
-
-**#### Service / Use Case**
+#### HTTP Handler
 
 Responsible for:
 
-\* Business rules
+* Parsing HTTP requests
 
-\* Task validation
+* Validating request parameters
 
-\* Default task status
+* Converting HTTP input into service inputs
 
-\* Pagination calculations
+* Calling the service layer
 
-\* Coordinating repository operations
+* Mapping domain/service errors to HTTP responses
 
-\* Translating persistence failures into service-level errors
+* Returning consistent JSON responses
 
-**#### Repository**
+#### Service / Use Case
 
 Responsible for:
 
-\* PostgreSQL queries
+* Business rules
 
-\* Persistence operations
+* Task validation
 
-\* Database error handling
+* Default task status
 
-\* Mapping database records to domain objects
+* Pagination calculations
 
-The service depends on the repository **\*\*interface\*\***, rather than directly depending on PostgreSQL.
+* Coordinating repository operations
+
+* Translating persistence failures into service-level errors
+
+#### Repository
+
+Responsible for:
+
+* PostgreSQL queries
+
+* Persistence operations
+
+* Database error handling
+
+* Mapping database records to domain objects
+
+The service depends on the repository **interface**, rather than directly depending on PostgreSQL.
 
 This makes the business logic independently testable with mocks.
 
-**#### Infrastructure**
+#### Infrastructure
 
 Infrastructure components include:
 
-\* PostgreSQL connection pooling
+* PostgreSQL connection pooling
 
-\* Database migrations
+* Database migrations
 
-\* Prometheus metrics
+* Prometheus metrics
 
-\* OpenTelemetry tracing
+* OpenTelemetry tracing
 
-\* Structured logging
+* Structured logging
 
-\* Docker
+* Docker
 
-\* pprof runtime profiling
+* pprof runtime profiling
 
-**---**
+---
 
-**## Microservice Design**
+## Microservice Design
 
 The Task Manager is a standalone microservice rather than a monolithic application containing unrelated business domains.
 
 It has:
 
-\* Its own HTTP API
+* Its own HTTP API
 
-\* Its own domain model
+* Its own domain model
 
-\* Its own persistence layer
+* Its own persistence layer
 
-\* Its own configuration
+* Its own configuration
 
-\* Its own container image
+* Its own container image
 
-\* Its own health endpoint
+* Its own health endpoint
 
-\* Its own metrics
+* Its own metrics
 
-\* Its own tracing/logging
+* Its own tracing/logging
 
-\* Independent deployment and scaling capability
+* Independent deployment and scaling capability
 
 The service can therefore exist as one component in a larger distributed system:
 
-\`\`\`text
+```text
 
                          ┌──────────────┐
 
@@ -270,43 +270,43 @@ The service can therefore exist as one component in a larger distributed system:
 
         └────────────────┘
 
-\`\`\`
+```
 
-The current project implements the **\*\*Task Manager service\*\*** only.
+The current project implements the **Task Manager service** only.
 
-**---**
+---
 
-**## Technology Stack**
+## Technology Stack
 
-\* **\*\*Language:\*\*** Go
+* **Language:** Go
 
-\* **\*\*HTTP framework:\*\*** Gin
+* **HTTP framework:** Gin
 
-\* **\*\*Database:\*\*** PostgreSQL
+* **Database:** PostgreSQL
 
-\* **\*\*Database driver:\*\*** pgx
+* **Database driver:** pgx
 
-\* **\*\*Connection pooling:\*\*** pgxpool
+* **Connection pooling:** pgxpool
 
-\* **\*\*Migrations:\*\*** golang-migrate
+* **Migrations:** golang-migrate
 
-\* **\*\*Metrics:\*\*** Prometheus
+* **Metrics:** Prometheus
 
-\* **\*\*Tracing:\*\*** OpenTelemetry
+* **Tracing:** OpenTelemetry
 
-\* **\*\*Logging:\*\*** Go \`slog\`
+* **Logging:** Go \`slog\`
 
-\* **\*\*Containerization:\*\*** Docker
+* **Containerization:** Docker
 
-\* **\*\*Orchestration for local development:\*\*** Docker Compose
+* **Orchestration for local development:** Docker Compose
 
-\* **\*\*Runtime profiling:\*\*** Go pprof
+* **Runtime profiling:** Go pprof
 
-\* **\*\*API specification:\*\*** OpenAPI
+* **API specification:** OpenAPI
 
-**---**
+---
 
-**## Task Model**
+## Task Model
 
 Each task contains:
 
@@ -324,125 +324,125 @@ Each task contains:
 
 \| \`assignee\`    | string    | Optional assignee         |
 
-\| \`created\_at\`  | timestamp | Creation timestamp        |
+\| \`created_at\`  | timestamp | Creation timestamp        |
 
-\| \`updated\_at\`  | timestamp | Last update timestamp     |
+\| \`updated_at\`  | timestamp | Last update timestamp     |
 
 Supported statuses:
 
-\`\`\`text
+```text
 
 pending
 
-in\_progress
+in_progress
 
 completed
 
-\`\`\`
+```
 
-**### Validation**
+### Validation
 
 The service validates:
 
-\* Required task title
+* Required task title
 
-\* Maximum title length
+* Maximum title length
 
-\* Maximum description length
+* Maximum description length
 
-\* Valid task status
+* Valid task status
 
-\* Maximum assignee length
+* Maximum assignee length
 
-**---**
+---
 
-**## Requirements**
+## Requirements
 
 For local development:
 
-\* Go 1.25+
+* Go 1.25+
 
-\* PostgreSQL 17+
+* PostgreSQL 17+
 
-\* Docker
+* Docker
 
-\* Docker Compose
+* Docker Compose
 
-\* \`migrate\` CLI for manually running migrations
+* \`migrate\` CLI for manually running migrations
 
 Node.js/npm is only required if you want to validate the OpenAPI document using Swagger CLI.
 
-**---**
+---
 
-**## Configuration**
+## Configuration
 
 Copy the example environment file:
 
-\`\`\`bash
+```bash
 
 cp .env.example .env
 
-\`\`\`
+```
 
 The application reads configuration from environment variables.
 
 Example configuration:
 
-\`\`\`dotenv
+```dotenv
 
-APP\_ENV=development
+APP_ENV=development
 
-HTTP\_PORT=8080
+HTTP_PORT=8080
 
-LOG\_LEVEL=info
+LOG_LEVEL=info
 
-DATABASE\_HOST=localhost
+DATABASE_HOST=localhost
 
-DATABASE\_PORT=5432
+DATABASE_PORT=5432
 
-DATABASE\_USER=task\_manager
+DATABASE_USER=task_manager
 
-DATABASE\_PASSWORD=task\_manager
+DATABASE_PASSWORD=task_manager
 
-DATABASE\_NAME=task\_manager
+DATABASE_NAME=task_manager
 
-DATABASE\_SSLMODE=disable
+DATABASE_SSLMODE=disable
 
-DATABASE\_MAX\_CONNS=10
+DATABASE_MAX_CONNS=10
 
-DATABASE\_MIN\_CONNS=2
+DATABASE_MIN_CONNS=2
 
-DATABASE\_MAX\_CONN\_LIFETIME\_MINUTES=30
+DATABASE_MAX_CONN_LIFETIME_MINUTES=30
 
-DATABASE\_MAX\_CONN\_IDLE\_TIME\_MINUTES=5
+DATABASE_MAX_CONN_IDLE_TIME_MINUTES=5
 
-\`\`\`
+```
 
 For Docker Compose, PostgreSQL is available to the application as:
 
-\`\`\`dotenv
+```dotenv
 
-DATABASE\_HOST=postgres
+DATABASE_HOST=postgres
 
-DATABASE\_PORT=5432
+DATABASE_PORT=5432
 
-\`\`\`
+```
 
-**---**
+---
 
-**## Running with Docker Compose**
+## Running with Docker Compose
 
 Start the complete environment:
 
-\`\`\`bash
+```bash
 
 docker compose up -d --build
 
-\`\`\`
+```
 
 The Compose environment contains:
 
-\`\`\`text
+```text
 
 PostgreSQL
 
@@ -458,29 +458,29 @@ Migration Runner
 
 Task Manager Application
 
-\`\`\`
+```
 
 PostgreSQL and Redis have health checks. The application waits for PostgreSQL and successful migrations before starting. Redis is optional: if it is unavailable, the application continues using PostgreSQL without caching.
 
 Check the containers:
 
-\`\`\`bash
+```bash
 
 docker compose ps
 
-\`\`\`
+```
 
 Check the service:
 
-\`\`\`bash
+```bash
 
-curl http\://localhost:8080/health
+curl http://localhost:8080/health
 
-\`\`\`
+```
 
 Expected response:
 
-\`\`\`json
+```json
 
 {
 
@@ -488,111 +488,111 @@ Expected response:
 
 }
 
-\`\`\`
+```
 
 Stop the environment:
 
-\`\`\`bash
+```bash
 
 docker compose down
 
-\`\`\`
+```
 
 PostgreSQL data is stored in a Docker volume.
 
-**---**
+---
 
-**## Database Migrations**
+## Database Migrations
 
 The Docker Compose setup runs migrations automatically before starting the application.
 
-For manual migrations, configure \`DATABASE\_URL\` and run:
+For manual migrations, configure \`DATABASE_URL\` and run:
 
-\`\`\`bash
+```bash
 
 make migration-up
 
-\`\`\`
+```
 
 Check the migration version:
 
-\`\`\`bash
+```bash
 
 make migration-version
 
-\`\`\`
+```
 
 Roll back the latest migration:
 
-\`\`\`bash
+```bash
 
 make migration-down
 
-\`\`\`
+```
 
 The test database can be migrated with:
 
-\`\`\`bash
+```bash
 
 make migration-test-up
 
-\`\`\`
+```
 
-**---**
+---
 
-**## Running Locally**
+## Running Locally
 
 Start PostgreSQL and configure the database connection through environment variables.
 
 Then run:
 
-\`\`\`bash
+```bash
 
 make migration-up
 
 make run
 
-\`\`\`
+```
 
 The HTTP server listens on:
 
-\`\`\`text
+```text
 
-http\://localhost:8080
+http://localhost:8080
 
-\`\`\`
+```
 
-**---**
+---
 
-**# API**
+# API
 
 Base API path:
 
-\`\`\`text
+```text
 
 /api/v1
 
-\`\`\`
+```
 
-**## Health Check**
+## Health Check
 
-\`\`\`http
+```http
 
 GET /health
 
-\`\`\`
+```
 
 Example:
 
-\`\`\`bash
+```bash
 
-curl http\://localhost:8080/health
+curl http://localhost:8080/health
 
-\`\`\`
+```
 
 Expected response:
 
-\`\`\`json
+```json
 
 {
 
@@ -600,23 +600,23 @@ Expected response:
 
 }
 
-\`\`\`
+```
 
-**---**
+---
 
-**## Create a Task**
+## Create a Task
 
-\`\`\`http
+```http
 
 POST /api/v1/tasks
 
-\`\`\`
+```
 
 Example:
 
-\`\`\`bash
+```bash
 
-curl -X POST http\://localhost:8080/api/v1/tasks \\
+curl -X POST http://localhost:8080/api/v1/tasks \\
 
   -H 'Content-Type: application/json' \\
 
@@ -632,43 +632,43 @@ curl -X POST http\://localhost:8080/api/v1/tasks \\
 
   }'
 
-\`\`\`
+```
 
 The \`status\` field is optional when creating a task.
 
 When omitted, the task starts with:
 
-\`\`\`text
+```text
 
 pending
 
-\`\`\`
+```
 
-**---**
+---
 
-**## List Tasks**
+## List Tasks
 
-\`\`\`http
+```http
 
 GET /api/v1/tasks
 
-\`\`\`
+```
 
 Example:
 
-\`\`\`bash
+```bash
 
-curl http\://localhost:8080/api/v1/tasks
+curl http://localhost:8080/api/v1/tasks
 
-\`\`\`
+```
 
-**### Pagination**
+### Pagination
 
-\`\`\`bash
+```bash
 
-curl 'http\://localhost:8080/api/v1/tasks?page=1&page\_size=20'
+curl 'http://localhost:8080/api/v1/tasks?page=1&page_size=20'
 
-\`\`\`
+```
 
 The default page is \`1\`.
 
@@ -676,31 +676,31 @@ The default page size is \`20\`.
 
 The maximum page size is \`100\`.
 
-**### Filter by status**
+### Filter by status
 
-\`\`\`bash
+```bash
 
-curl 'http\://localhost:8080/api/v1/tasks?status=in\_progress'
+curl 'http://localhost:8080/api/v1/tasks?status=in_progress'
 
-\`\`\`
+```
 
-**### Filter by assignee**
+### Filter by assignee
 
-\`\`\`bash
+```bash
 
-curl 'http\://localhost:8080/api/v1/tasks?assignee=alice'
+curl 'http://localhost:8080/api/v1/tasks?assignee=alice'
 
-\`\`\`
+```
 
-**### Combine filters and pagination**
+### Combine filters and pagination
 
-\`\`\`bash
+```bash
 
-curl 'http\://localhost:8080/api/v1/tasks?status=pending&assignee=alice&page=1&page\_size=20'
+curl 'http://localhost:8080/api/v1/tasks?status=pending&assignee=alice&page=1&page_size=20'
 
-\`\`\`
+```
 
-**---
+---
 
 # Redis Cache
 
@@ -708,7 +708,7 @@ Redis is implemented as an **optional cache** using a **cache-aside** strategy f
 
 PostgreSQL remains the authoritative data store. Redis is used only to reduce repeated database reads for task-list queries.
 
-**### Caching strategy**
+### Caching strategy
 
 ```text
 HTTP Request
@@ -738,7 +738,7 @@ Cached task lists expire according to:
 REDIS_CACHE_TTL_SECONDS=60
 ```
 
-**### Cache invalidation**
+### Cache invalidation
 
 Task-list caches are invalidated after successful:
 
@@ -748,7 +748,7 @@ Task-list caches are invalidated after successful:
 
 This prevents stale task-list results after task data changes.
 
-**### Redis failure behavior**
+### Redis failure behavior
 
 Redis is treated as an optional dependency.
 
@@ -761,7 +761,7 @@ If Redis is unavailable:
 
 This keeps PostgreSQL as the source of truth and prevents a Redis outage from taking down the service.
 
-**### Redis configuration**
+### Redis configuration
 
 ```dotenv
 REDIS_ENABLED=true
@@ -779,7 +779,7 @@ REDIS_PORT=6379
 REDIS_CACHE_TTL_SECONDS=60
 ```
 
-**### Verify Redis is running**
+### Verify Redis is running
 
 Start the complete environment:
 
@@ -805,7 +805,7 @@ Expected:
 PONG
 ```
 
-**### Verify cache population**
+### Verify cache population
 
 Start with an empty Redis database:
 
@@ -853,7 +853,7 @@ curl -i http://localhost:8080/api/v1/tasks
 
 The second request should be served from the Redis cache.
 
-**### Verify cached filters and pagination**
+### Verify cached filters and pagination
 
 Different list parameters produce different cache entries. For example:
 
@@ -870,7 +870,7 @@ Inspect the keys:
 docker compose exec redis redis-cli --scan --pattern 'task_manager:tasks:list:*'
 ```
 
-**### Verify cache expiration**
+### Verify cache expiration
 
 Inspect the TTL of a cached task-list key:
 
@@ -886,7 +886,7 @@ With the default configuration, the value should initially be close to:
 
 The exact value depends on when the cache entry was created.
 
-**### Verify cache invalidation**
+### Verify cache invalidation
 
 First populate the task-list cache:
 
@@ -938,7 +938,7 @@ curl -i -X PUT http://localhost:8080/api/v1/tasks/<TASK_ID> \
 curl -i -X DELETE http://localhost:8080/api/v1/tasks/<TASK_ID>
 ```
 
-**### Verify Redis failure handling**
+### Verify Redis failure handling
 
 Stop Redis:
 
@@ -978,7 +978,7 @@ Expected:
 PONG
 ```
 
-**### Automated Redis tests**
+### Automated Redis tests
 
 Run the Redis cache tests:
 
@@ -1010,7 +1010,7 @@ The Redis/service tests should verify:
 * mutation invalidation;
 * Redis failures not causing service/API failures.
 
-**### Useful Redis commands**
+### Useful Redis commands
 
 Inspect all task-list cache keys:
 
@@ -1050,41 +1050,41 @@ docker compose exec redis redis-cli ping
 
 Redis should be considered an optimization rather than persistent storage. PostgreSQL remains the source of truth.
 
-**---
+---
 
-**## Get a Task**
+## Get a Task
 
-\`\`\`http
+```http
 
 GET /api/v1/tasks/{id}
 
-\`\`\`
+```
 
 Example:
 
-\`\`\`bash
+```bash
 
-curl http\://localhost:8080/api/v1/tasks/00000000-0000-0000-0000-000000000000
+curl http://localhost:8080/api/v1/tasks/00000000-0000-0000-0000-000000000000
 
-\`\`\`
+```
 
 Replace the UUID with an existing task ID.
 
-**---**
+---
 
-**## Update a Task**
+## Update a Task
 
-\`\`\`http
+```http
 
 PUT /api/v1/tasks/{id}
 
-\`\`\`
+```
 
 Example:
 
-\`\`\`bash
+```bash
 
-curl -X PUT http\://localhost:8080/api/v1/tasks/00000000-0000-0000-0000-000000000000 \\
+curl -X PUT http://localhost:8080/api/v1/tasks/00000000-0000-0000-0000-000000000000 \\
 
   -H 'Content-Type: application/json' \\
 
@@ -1100,37 +1100,37 @@ curl -X PUT http\://localhost:8080/api/v1/tasks/00000000-0000-0000-0000-00000000
 
   }'
 
-\`\`\`
+```
 
 Replace the UUID with an existing task ID.
 
-**---**
+---
 
-**## Delete a Task**
+## Delete a Task
 
-\`\`\`http
+```http
 
 DELETE /api/v1/tasks/{id}
 
-\`\`\`
+```
 
 Example:
 
-\`\`\`bash
+```bash
 
-curl -X DELETE http\://localhost:8080/api/v1/tasks/00000000-0000-0000-0000-000000000000
+curl -X DELETE http://localhost:8080/api/v1/tasks/00000000-0000-0000-0000-000000000000
 
-\`\`\`
+```
 
 Replace the UUID with an existing task ID.
 
-**---**
+---
 
-**# Observability**
+# Observability
 
 The service includes structured logging, request IDs, metrics, tracing, and runtime profiling.
 
-**## Request IDs**
+## Request IDs
 
 Every request receives an \`X-Request-ID\`.
 
@@ -1140,219 +1140,219 @@ Otherwise, the service generates a UUID.
 
 The request ID is:
 
-\* Returned in the response header
+* Returned in the response header
 
-\* Included in structured logs
+* Included in structured logs
 
 Example:
 
-\`\`\`bash
+```bash
 
-curl -i http\://localhost:8080/health
+curl -i http://localhost:8080/health
 
-\`\`\`
+```
 
-**---**
+---
 
-**## Structured Logging**
+## Structured Logging
 
 The service uses Go's structured \`slog\` logger.
 
 HTTP request logs include information such as:
 
-\* Request ID
+* Request ID
 
-\* HTTP method
+* HTTP method
 
-\* Request path
+* Request path
 
-\* Matched route
+* Matched route
 
-\* Response status
+* Response status
 
-\* Request duration
+* Request duration
 
-**---**
+---
 
-**## Prometheus Metrics**
+## Prometheus Metrics
 
 Prometheus metrics are exposed at:
 
-\`\`\`text
+```text
 
 /metrics
 
-\`\`\`
+```
 
 Example:
 
-\`\`\`bash
+```bash
 
-curl http\://localhost:8080/metrics
+curl http://localhost:8080/metrics
 
-\`\`\`
+```
 
 The service exposes:
 
-\* HTTP request counter
+* HTTP request counter
 
-\* HTTP request duration histogram
+* HTTP request duration histogram
 
-\* Current task count gauge
+* Current task count gauge
 
 The task count metric is:
 
-\`\`\`text
+```text
 
-task\_manager\_tasks\_count
+task_manager_tasks_count
 
-\`\`\`
+```
 
 HTTP metrics include:
 
-\`\`\`text
+```text
 
-task\_manager\_http\_requests\_total
+task_manager_http_requests_total
 
-task\_manager\_http\_request\_duration\_seconds
+task_manager_http_request_duration_seconds
 
-\`\`\`
+```
 
 The task count is initialized from PostgreSQL and refreshed after task mutations.
 
-**---**
+---
 
-**# Load Testing and Benchmarking**
+# Load Testing and Benchmarking
 
 The project includes Go benchmarks for measuring service-layer performance without requiring a running PostgreSQL instance.
 
 Run the benchmarks with:
 
-\`\`\`bash
+```bash
 
 go test ./internal/service -bench=. -benchmem
 
-\`\`\`
+```
 
 The current benchmarks cover:
 
-\* \`BenchmarkTaskService\_Create\` — measures task creation through the service layer using a mock repository.
+* \`BenchmarkTaskService_Create\` — measures task creation through the service layer using a mock repository.
 
-\* \`BenchmarkTaskService\_GetByID\` — measures retrieving a task through the service layer using a mock repository.
+* \`BenchmarkTaskService_GetByID\` — measures retrieving a task through the service layer using a mock repository.
 
-**## Actual benchmark result**
+## Actual benchmark result
 
 The following result was measured during development:
 
-\`\`\`text
+```text
 
-BenchmarkTaskService\_Create-16       7003384   154.9 ns/op   16 B/op  1 allocs/op
+BenchmarkTaskService_Create-16       7003384   154.9 ns/op   16 B/op  1 allocs/op
 
-BenchmarkTaskService\_GetByID-16     39989529    29.96 ns/op   0 B/op  0 allocs/op
+BenchmarkTaskService_GetByID-16     39989529    29.96 ns/op   0 B/op  0 allocs/op
 
 PASS
 
-\`\`\`
+```
 
 Interpretation:
 
-\* \`BenchmarkTaskService\_Create\`: approximately \`154.9 ns/op\` in the measured environment.
+* \`BenchmarkTaskService_Create\`: approximately \`154.9 ns/op\` in the measured environment.
 
-\* \`BenchmarkTaskService\_GetByID\`: approximately \`29.96 ns/op\` in the measured environment.
+* \`BenchmarkTaskService_GetByID\`: approximately \`29.96 ns/op\` in the measured environment.
 
-\* \`B/op\` represents allocated bytes per operation.
+* \`B/op\` represents allocated bytes per operation.
 
-\* \`allocs/op\` represents allocations per operation.
+* \`allocs/op\` represents allocations per operation.
 
-These measurements are **\*\*service-layer benchmarks using mocked persistence\*\***. They are not representative of complete HTTP or PostgreSQL throughput.
+These measurements are **service-layer benchmarks using mocked persistence**. They are not representative of complete HTTP or PostgreSQL throughput.
 
 Results are environment-dependent and should not be interpreted as production capacity.
 
-**## HTTP load testing**
+## HTTP load testing
 
 For HTTP-level load testing, the running service can be exercised with tools such as \`hey\`, \`wrk\`, or \`k6\`.
 
 Example using \`hey\`:
 
-\`\`\`bash
+```bash
 
 docker compose up -d --build
 
-hey -n 1000 -c 10 http\://localhost:8080/health
+hey -n 1000 -c 10 http://localhost:8080/health
 
-\`\`\`
+```
 
 Where:
 
-\* \`-n 1000\` sends 1,000 requests.
+* \`-n 1000\` sends 1,000 requests.
 
-\* \`-c 10\` uses 10 concurrent workers.
+* \`-c 10\` uses 10 concurrent workers.
 
 For API load testing, create test data first and then target the relevant task endpoints.
 
 During a load test, \`/metrics\` and pprof can be monitored to observe:
 
-\* Request rate
+* Request rate
 
-\* Request latency
+* Request latency
 
-\* HTTP status distribution
+* HTTP status distribution
 
-\* Current task count
+* Current task count
 
-\* Memory behavior
+* Memory behavior
 
-\* Goroutine behavior
+* Goroutine behavior
 
-\* Runtime characteristics
+* Runtime characteristics
 
 HTTP load-test results should be recorded together with:
 
-\* Endpoint
+* Endpoint
 
-\* Request count
+* Request count
 
-\* Concurrency
+* Concurrency
 
-\* Payload
+* Payload
 
-\* Test tool and version
+* Test tool and version
 
-\* Application version/commit
+* Application version/commit
 
-\* Database configuration
+* Database configuration
 
-\* Docker/host environment
+* Docker/host environment
 
 This avoids presenting environment-specific measurements as universal performance guarantees.
 
-**---**
+---
 
-**# pprof Runtime Profiling Report**
+# pprof Runtime Profiling Report
 
 The service exposes Go's built-in pprof runtime profiling endpoints under:
 
-\`\`\`text
+```text
 
 /debug/pprof/
 
-\`\`\`
+```
 
 The pprof endpoints were verified against the running Docker Compose deployment.
 
-**## pprof index verification**
+## pprof index verification
 
 The following endpoint was tested:
 
-\`\`\`bash
+```bash
 
-curl http\://localhost:8080/debug/pprof/
+curl http://localhost:8080/debug/pprof/
 
-\`\`\`
+```
 
 The endpoint returned HTTP \`200\` and exposed the standard Go runtime profiles, including:
 
-\`\`\`text
+```text
 
 allocs
 
@@ -1366,71 +1366,71 @@ mutex
 
 threadcreate
 
-\`\`\`
+```
 
 The pprof index and profiles were successfully verified against the running Docker deployment.
 
-**## Real heap profile collection**
+## Real heap profile collection
 
 A real heap profile was collected from the running service with:
 
-\`\`\`bash
+```bash
 
-curl http\://localhost:8080/debug/pprof/heap -o /tmp/heap.pprof
+curl http://localhost:8080/debug/pprof/heap -o /tmp/heap.pprof
 
-\`\`\`
+```
 
 The request completed successfully and produced:
 
-\`\`\`text
+```text
 
 3256 bytes
 
-\`\`\`
+```
 
 for the collected heap profile.
 
 This confirms that the application was able to serve an actual runtime heap profile from the running container.
 
-**## Inspecting the collected profile**
+## Inspecting the collected profile
 
 The profile can be inspected using Go's pprof tooling:
 
-\`\`\`bash
+```bash
 
 go tool pprof /tmp/heap.pprof
 
-\`\`\`
+```
 
 For a top-level textual report:
 
-\`\`\`bash
+```bash
 
 go tool pprof -top /tmp/heap.pprof
 
-\`\`\`
+```
 
 For an interactive web visualization:
 
-\`\`\`bash
+```bash
 
 go tool pprof -http=:8081 /tmp/heap.pprof
 
-\`\`\`
+```
 
 Then open:
 
-\`\`\`text
+```text
 
-http\://localhost:8081
+http://localhost:8081
 
-\`\`\`
+```
 
-**## Available pprof endpoints**
+## Available pprof endpoints
 
 The service exposes:
 
-\`\`\`text
+```text
 
 /debug/pprof/
 
@@ -1454,217 +1454,217 @@ The service exposes:
 
 /debug/pprof/allocs
 
-\`\`\`
+```
 
-**## Profiling report interpretation**
+## Profiling report interpretation
 
 The collected heap profile is a runtime snapshot.
 
 Therefore:
 
-\* Profile size depends on the runtime state.
+* Profile size depends on the runtime state.
 
-\* Memory allocations depend on the current workload.
+* Memory allocations depend on the current workload.
 
-\* Goroutine counts depend on the current runtime state.
+* Goroutine counts depend on the current runtime state.
 
-\* Profiling results can change between executions.
+* Profiling results can change between executions.
 
-\* The collected profile should be treated as a diagnostic artifact rather than a fixed performance benchmark.
+* The collected profile should be treated as a diagnostic artifact rather than a fixed performance benchmark.
 
 No specific CPU, memory, goroutine, or allocation conclusions are claimed here beyond the endpoints and heap-profile collection that were actually verified.
 
-**---**
+---
 
-**# Testing**
+# Testing
 
 Run the complete test suite:
 
-\`\`\`bash
+```bash
 
 go test ./...
 
-\`\`\`
+```
 
 Run tests with coverage:
 
-\`\`\`bash
+```bash
 
 make coverage
 
-\`\`\`
+```
 
 Run static analysis:
 
-\`\`\`bash
+```bash
 
 make vet
 
-\`\`\`
+```
 
 Format the project:
 
-\`\`\`bash
+```bash
 
 make fmt
 
-\`\`\`
+```
 
 Run repository integration tests:
 
-\`\`\`bash
+```bash
 
 make test-integration
 
-\`\`\`
+```
 
 The integration tests use:
 
-\`\`\`text
+```text
 
-TEST\_DATABASE\_URL
+TEST_DATABASE_URL
 
-\`\`\`
+```
 
 If it is not provided, the Makefile supplies the project's local test database connection as the default.
 
-**## Coverage**
+## Coverage
 
 The project was tested with:
 
-\`\`\`bash
+```bash
 
 go test ./... -coverprofile=coverage.out
 
 go tool cover -func=coverage.out
 
-\`\`\`
+```
 
 The measured overall statement coverage reached:
 
-\`\`\`text
+```text
 
 70.6%
 
-\`\`\`
+```
 
 This satisfies the project's target of at least 70% statement coverage.
 
-**---**
+---
 
-**# Integration Testing**
+# Integration Testing
 
 Repository integration tests use a real PostgreSQL database.
 
 Set:
 
-\`\`\`bash
+```bash
 
-export TEST\_DATABASE\_URL="postgres\://task\_manager\:task\_manager\@localhost:5432/task\_manager\_test?sslmode=disable"
+export TEST_DATABASE_URL="postgres://task_manager:task_manager@localhost:5432/task_manager_test?sslmode=disable"
 
-\`\`\`
+```
 
 Apply the migrations:
 
-\`\`\`bash
+```bash
 
 make migration-test-up
 
-\`\`\`
+```
 
 Run the integration tests:
 
-\`\`\`bash
+```bash
 
 make test-integration
 
-\`\`\`
+```
 
 The repository integration tests cover:
 
-\* Create and retrieve
+* Create and retrieve
 
-\* Not-found behavior
+* Not-found behavior
 
-\* Listing
+* Listing
 
-\* Filtering
+* Filtering
 
-\* Pagination
+* Pagination
 
-\* Update
+* Update
 
-\* Delete
+* Delete
 
-\* Database behavior
+* Database behavior
 
 Unit tests use mocked repository/database dependencies where appropriate.
 
-**---**
+---
 
-**# OpenAPI**
+# OpenAPI
 
 The complete API specification is available in:
 
-\`\`\`text
+```text
 
 openapi.yaml
 
-\`\`\`
+```
 
 It documents:
 
-\* Health endpoint
+* Health endpoint
 
-\* Metrics endpoint
+* Metrics endpoint
 
-\* Task creation
+* Task creation
 
-\* Task listing
+* Task listing
 
-\* Task retrieval
+* Task retrieval
 
-\* Task updates
+* Task updates
 
-\* Task deletion
+* Task deletion
 
-\* Request schemas
+* Request schemas
 
-\* Response schemas
+* Response schemas
 
-\* Error responses
+* Error responses
 
-\* Pagination
+* Pagination
 
-\* Filtering
+* Filtering
 
-\* Task statuses
+* Task statuses
 
 Validate the specification with:
 
-\`\`\`bash
+```bash
 
 npx @apidevtools/swagger-cli validate openapi.yaml
 
-\`\`\`
+```
 
 Expected result:
 
-\`\`\`text
+```text
 
 openapi.yaml is valid
 
-\`\`\`
+```
 
-**---**
+---
 
-**# Docker**
+# Docker
 
 The application uses a multi-stage Docker build.
 
 The build process:
 
-\`\`\`text
+```text
 
 Go source
 
@@ -1688,45 +1688,45 @@ Standalone binary
 
 Minimal Alpine runtime image
 
-\`\`\`
+```
 
 The runtime container runs as a non-root user.
 
 Docker Compose provides:
 
-\* PostgreSQL
+* PostgreSQL
 
-\* Migration runner
+* Migration runner
 
-\* Task Manager application
+* Task Manager application
 
-\* PostgreSQL health checks
+* PostgreSQL health checks
 
-\* Application health checks
+* Application health checks
 
-\* Persistent PostgreSQL storage
+* Persistent PostgreSQL storage
 
 Build and start:
 
-\`\`\`bash
+```bash
 
 docker compose up -d --build
 
-\`\`\`
+```
 
 Stop:
 
-\`\`\`bash
+```bash
 
 docker compose down
 
-\`\`\`
+```
 
-**---**
+---
 
-**# Project Structure**
+# Project Structure
 
-\`\`\`text
+```text
 
 task-manager/
 
@@ -1742,7 +1742,7 @@ task-manager/
 
 │   │   ├── config.go
 
-│   │   └── config\_test.go
+│   │   └── config_test.go
 
 │   ├── database/
 
@@ -1752,65 +1752,65 @@ task-manager/
 
 │   │   ├── task.go
 
-│   │   └── task\_test.go
+│   │   └── task_test.go
 
 │   ├── handler/
 
-│   │   ├── task\_handler.go
+│   │   ├── task_handler.go
 
-│   │   ├── mock\_task\_service\_test.go
+│   │   ├── mock_task_service_test.go
 
-│   │   └── task\_handler\_test.go
+│   │   └── task_handler_test.go
 
 │   ├── metrics/
 
 │   │   ├── metrics.go
 
-│   │   └── metrics\_test.go
+│   │   └── metrics_test.go
 
 │   ├── middleware/
 
-│   │   ├── request\_id.go
+│   │   ├── request_id.go
 
-│   │   ├── request\_logger.go
+│   │   ├── request_logger.go
 
-│   │   ├── request\_logger\_test.go
+│   │   ├── request_logger_test.go
 
 │   │   ├── metrics.go
 
-│   │   ├── metrics\_test.go
+│   │   ├── metrics_test.go
 
 │   │   └── tracing.go
 
 │   ├── repository/
 
-│   │   ├── task\_repository.go
+│   │   ├── task_repository.go
 
-│   │   ├── postgres\_task\_repository.go
+│   │   ├── postgres_task_repository.go
 
-│   │   ├── mock\_task\_repository.go
+│   │   ├── mock_task_repository.go
 
-│   │   ├── postgres\_task\_repository\_test.go
+│   │   ├── postgres_task_repository_test.go
 
-│   │   └── postgres\_task\_repository\_integration\_test.go
+│   │   └── postgres_task_repository_integration_test.go
 
 │   ├── server/
 
 │   │   ├── server.go
 
-│   │   └── http\_integration\_test.go
+│   │   └── http_integration_test.go
 
 │   ├── service/
 
 │   │   ├── errors.go
 
-│   │   ├── task\_service.go
+│   │   ├── task_service.go
 
-│   │   ├── task\_service\_impl.go
+│   │   ├── task_service_impl.go
 
-│   │   ├── task\_service\_test.go
+│   │   ├── task_service_test.go
 
-│   │   └── task\_service\_benchmark\_test.go
+│   │   └── task_service_benchmark_test.go
 
 │   └── tracing/
 
@@ -1818,9 +1818,9 @@ task-manager/
 
 ├── migrations/
 
-│   ├── 000001\_create\_tasks.up.sql
+│   ├── 000001_create_tasks.up.sql
 
-│   └── 000001\_create\_tasks.down.sql
+│   └── 000001_create_tasks.down.sql
 
 ├── docs/
 
@@ -1840,107 +1840,107 @@ task-manager/
 
 └── README.md
 
-\`\`\`
+```
 
-**---**
+---
 
-**# Useful Commands**
+# Useful Commands
 
 Run the application:
 
-\`\`\`bash
+```bash
 
 make run
 
-\`\`\`
+```
 
 Run all tests:
 
-\`\`\`bash
+```bash
 
 make test
 
-\`\`\`
+```
 
 Run integration tests:
 
-\`\`\`bash
+```bash
 
 make test-integration
 
-\`\`\`
+```
 
 Generate coverage:
 
-\`\`\`bash
+```bash
 
 make coverage
 
-\`\`\`
+```
 
 Run static analysis:
 
-\`\`\`bash
+```bash
 
 make vet
 
-\`\`\`
+```
 
 Format the project:
 
-\`\`\`bash
+```bash
 
 make fmt
 
-\`\`\`
+```
 
 Update dependencies:
 
-\`\`\`bash
+```bash
 
 make tidy
 
-\`\`\`
+```
 
 Build the application:
 
-\`\`\`bash
+```bash
 
 make build
 
-\`\`\`
+```
 
 Start Docker environment:
 
-\`\`\`bash
+```bash
 
 make docker-up
 
-\`\`\`
+```
 
 Stop Docker environment:
 
-\`\`\`bash
+```bash
 
 make docker-down
 
-\`\`\`
+```
 
 Run service benchmarks:
 
-\`\`\`bash
+```bash
 
 go test ./internal/service -bench=. -benchmem
 
-\`\`\`
+```
 
-**---**
+---
 
-**# Verification Checklist**
+# Verification Checklist
 
 Before considering the service ready, run:
 
-\`\`\`bash
+```bash
 
 gofmt -l .
 
@@ -1956,17 +1956,17 @@ npx @apidevtools/swagger-cli validate openapi.yaml
 
 docker compose up -d --build
 
-curl http\://localhost:8080/health
+curl http://localhost:8080/health
 
-curl http\://localhost:8080/metrics
+curl http://localhost:8080/metrics
 
-curl http\://localhost:8080/debug/pprof/
+curl http://localhost:8080/debug/pprof/
 
-\`\`\`
+```
 
 The project should be verified through the complete development workflow:
 
-\`\`\`text
+```text
 
 Inspect
 
@@ -2010,4 +2010,4 @@ Document
 
 Review
 
-\`\`\`
+```
