@@ -46,6 +46,10 @@ func (m *mockTaskListCache) Set(
 		return m.setFunc(ctx, key, value, expiration)
 	}
 
+	if m.values == nil {
+		m.values = make(map[string][]byte)
+	}
+
 	m.values[key] = value
 
 	return nil
